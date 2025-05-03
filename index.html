@@ -7,9 +7,9 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
         .form-section { max-width: 900px; margin-left: 0; margin-right: auto; display: flex; flex-direction: row; gap: 2em; }
-        .form-section > div:first-child { flex: none; width: 340px; min-width: 340px; }
+        .form-section > div:first-child { flex: none; width: 420px; min-width: 420px; }
         .form-row { display: flex; gap: 1em; margin-bottom: 1em; }
-        .form-group { flex: 1; display: flex; flex-direction: column; }
+        .form-group { flex: 1; display: flex; flex-direction: column; min-width: 180px; }
         .input-group { display: flex; align-items: center; }
         .input-group button {
             width: 2.2em;
@@ -136,9 +136,9 @@
             border: 1px solid #e0e0e0;
             padding: 0.7em 1.2em 0.5em 1.2em;
             box-sizing: border-box;
-            width: 370px;
-            min-width: 370px;
-            max-width: 370px;
+            width: 420px;
+            min-width: 420px;
+            max-width: 420px;
             margin-bottom: 1em;
         }
         .mob-block {
@@ -147,11 +147,11 @@
             border: 1px solid #e0e0e0;
             padding: 0.7em 1.2em 0.5em 1.2em;
             box-sizing: border-box;
-            width: 280px;
-            min-width: 280px;
-            max-width: 280px;
+            width: 420px;
+            min-width: 420px;
+            max-width: 420px;
             margin-bottom: 1em;
-            margin-left: 4.2em;
+            margin-left: 0em;
             align-self: flex-start;
         }
         #mob_name {
@@ -176,6 +176,7 @@
             max-width: 370px;
             margin-bottom: 1em;
             margin-top: 5.0em;
+            min-height: 170px;
         }
     </style>
     <script type="module">
@@ -184,6 +185,7 @@
         import { Battle } from './battle.js';
         import { CloneModifiers, MobName } from './dataclasses.js';
         import { millify } from './utils.js';
+        import { Optimizer } from './optimizer.js';
 
         // Predefined test values for easy testing
         const DEFAULTS = {
@@ -391,13 +393,161 @@
                     `<b>Credits per hour:</b> ${millify(creditsPerHour)}/h<br>` +
                     `<b>Credits per day:</b> ${millify(creditsPerDay)}/day`;
             });
+
+            // Optimizer logic
+            const optimizerBtn = document.getElementById('optimizerBtn');
+            const optimizerResultDiv = document.getElementById('optimizerResult');
+            optimizerBtn.addEventListener('click', () => {
+                // Gather player fields
+                const power = parseInt(form.power.value) || 0;
+                const precision = parseInt(form.precision.value) || 0;
+                const evasion = parseInt(form.evasion.value) || 0;
+                const hull = parseInt(form.hull.value) || 0;
+                const weapon_dmg = parseInt(form.weapon_dmg.value) || 0;
+                const shield_def = parseInt(form.shield_def.value) || 0;
+                const n_clones = parseInt(form.n_clones.value) || 1;
+                const weapon_ele1 = form.weapon_ele1.value || null;
+                const weapon_ele2 = form.weapon_ele2.value || null;
+                const shield_ele1 = form.shield_ele1.value || null;
+                const shield_ele2 = form.shield_ele2.value || null;
+                const vip_status = form.vip_status.checked;
+
+                // Gather clone modifiers
+                const list_modifiers = cloneModifiers.map(mod =>
+                    new CloneModifiers(
+                        (parseFloat(mod.crit) || 0) / 100,
+                        (parseFloat(mod.critdmg) || 0) / 100,
+                        (parseFloat(mod.dual) || 0) / 100
+                    )
+                );
+
+                // Gather mob fields
+                const mob_name = form.mob_name.value;
+                const mob_level = parseInt(form.mob_level.value) || 1;
+                let mob_enum_key = Object.keys(MobName).find(key => MobName[key] === mob_name);
+                const mob = new Mob(MobName[mob_enum_key], mob_level);
+
+                // Create player
+                const player = new Player({
+                    power, precision, evasion, hull, weapon_dmg, shield_def, n_clones, vip_status,
+                    weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
+                });
+
+                // --- Inline optimizer logic (from optimizer.js) ---
+                const nb_points = Math.floor((player.pow + player.pre + player.eva + player.hull) / 5);
+                // Distribute points (copied from optimizer.js)
+                const k = 4;
+                const ratio = [1, 4, 4, 3];
+                const ratio_sum = ratio.reduce((a, b) => a + b, 0);
+                const ideal = ratio.map(r => Math.round(nb_points * r / ratio_sum));
+                const tolerance = 4;
+                const results = [];
+                function helper(remaining, parts) {
+                    if (parts.length === k - 1) {
+                        const last = remaining;
+                        const lcl = parts.concat([last]);
+                        if (lcl.every((val, i) => Math.abs(val - ideal[i]) <= tolerance)) {
+                            results.push(lcl);
+                        }
+                        return;
+                    }
+                    for (let i = 0; i <= remaining; i++) {
+                        helper(remaining - i, parts.concat([i]));
+                    }
+                }
+                helper(nb_points, []);
+                const possible_distributions = results;
+                const opt_results = [];
+                for (const d of possible_distributions) {
+                    const power = 5 * d[0];
+                    const precision = 5 * d[1];
+                    const evasion = 5 * d[2];
+                    const hull = 5 * d[3];
+                    const tmp_player = new Player({
+                        power,
+                        precision,
+                        evasion,
+                        hull,
+                        weapon_dmg: player.weapon_dmg,
+                        shield_def: player.shield_def,
+                        n_clones: player.n_clones,
+                        vip_status: player.vip_status,
+                        weapon_ele1: player.weapon_ele1,
+                        weapon_ele2: player.weapon_ele2,
+                        shield_ele1: player.shield_ele1,
+                        shield_ele2: player.shield_ele2
+                    });
+                    const battle = new Battle({ player: tmp_player, mob: mob, list_modifiers: list_modifiers });
+                    const win_chance = battle.repeat_fights(1000);
+                    opt_results.push({ Stats: [power, precision, evasion, hull], 'Win chance': win_chance });
+                }
+                opt_results.sort((a, b) => b['Win chance'] - a['Win chance']);
+                if (opt_results.length > 0) {
+                    const best = opt_results[0];
+                    const [power, precision, evasion, hull] = best.Stats;
+                    const final_player = new Player({
+                        power,
+                        precision,
+                        evasion,
+                        hull,
+                        weapon_dmg: player.weapon_dmg,
+                        shield_def: player.shield_def,
+                        n_clones: player.n_clones,
+                        vip_status: player.vip_status,
+                        weapon_ele1: player.weapon_ele1,
+                        weapon_ele2: player.weapon_ele2,
+                        shield_ele1: player.shield_ele1,
+                        shield_ele2: player.shield_ele2
+                    });
+                    const battle = new Battle({ player: final_player, mob: mob, list_modifiers: list_modifiers });
+                    const creditsPerHour = battle.get_revenue('hourly', best['Win chance']);
+                    const creditsPerDay = battle.get_revenue('daily', best['Win chance']);
+                    optimizerResultDiv.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2em 1.2em; width: 140px; margin-bottom: 1em; font-size: 1em; margin-left: 20px;">
+                            <div><b>Power</b><br>${power}</div>
+                            <div><b>Precision</b><br>${precision}</div>
+                            <div><b>Evasion</b><br>${evasion}</div>
+                            <div><b>Hull</b><br>${hull}</div>
+                        </div>
+                        <div style="font-size: 0.98em; margin-top: 0.2em;">
+                            <div><b>Win chance:</b> ${(best['Win chance'] * 100).toFixed(2)}%</div>
+                            <div><b>Credits per hour:</b> ${millify(creditsPerHour)}/h</div>
+                            <div><b>Credits per day:</b> ${millify(creditsPerDay)}/day</div>
+                        </div>
+                    `;
+                    // Add Import button below Optimize, centered
+                    let optimizerBlock = optimizerBtn.closest('.optimizer-block');
+                    let importBtn = document.getElementById('importOptimizedBtn');
+                    if (!importBtn) {
+                        importBtn = document.createElement('button');
+                        importBtn.id = 'importOptimizedBtn';
+                        importBtn.type = 'button';
+                        importBtn.textContent = 'Import';
+                        importBtn.style.margin = '18px 6px 0 0';
+                        importBtn.style.alignSelf = 'center';
+                        importBtn.style.fontSize = '0.9m';
+                        optimizerBtn.parentNode.insertBefore(importBtn, optimizerBtn.nextSibling);
+                    }
+                    importBtn.onclick = () => {
+                        form.power.value = power;
+                        form.precision.value = precision;
+                        form.evasion.value = evasion;
+                        form.hull.value = hull;
+                    };
+                } else {
+                    optimizerResultDiv.innerHTML = '<span style="color: #a00">No result</span>';
+                    // Remove Import button if present
+                    let importBtn = document.getElementById('importOptimizedBtn');
+                    if (importBtn) importBtn.remove();
+                }
+            });
         });
     </script>
 </head>
 <body>
     <form id="playerForm" class="form-section" autocomplete="off" style="display: flex; flex-direction: row; gap: 2em;">
         <div style="flex: 3;">
-            <div class="player-block">
+            <div class="player-block" style="width: 420px; min-width: 420px; max-width: 420px;">
                 <div class="block-label">Player</div>
                 <div class="form-row">
                     <div class="form-group">
@@ -522,42 +672,55 @@
                     </div>
                 </div>
             </div>
-            <div class="battle-block">
-                <div class="block-label">Battle Simulation</div>
+            <div class="mob-block" style="width: 420px; min-width: 420px; max-width: 420px;">
+                <div class="block-label">Mob</div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="n_fights">Number of fights:</label>
-                        <input type="number" id="n_fights" name="n_fights" value="1000" min="1">
+                        <label for="mob_name">Mob Name:</label>
+                        <select id="mob_name" name="mob_name">
+                            <option value="Brutes">Brutes</option>
+                            <option value="Dusters">Dusters</option>
+                            <option value="Machiners">Machiners</option>
+                            <option value="Toxoids">Toxoids</option>
+                            <option value="Scorchers">Scorchers</option>
+                            <option value="Glacials">Glacials</option>
+                            <option value="Specters">Specters</option>
+                            <option value="Miners">Miners</option>
+                        </select>
                     </div>
-                    <div class="form-group" style="align-items: flex-end; justify-content: flex-end;">
-                        <button id="simulateBtn" type="button">Simulate</button>
+                    <div class="form-group">
+                        <label for="mob_level">Level:</label>
+                        <div class="input-group">
+                            <button type="button" class="minus-btn" data-target="mob_level">-</button>
+                            <input type="number" id="mob_level" name="mob_level" value="1" min="1">
+                            <button type="button" class="plus-btn" data-target="mob_level">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
-        <div class="mob-block">
-            <div class="block-label">Mob</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="mob_name">Mob Name:</label>
-                    <select id="mob_name" name="mob_name">
-                        <option value="Brutes">Brutes</option>
-                        <option value="Dusters">Dusters</option>
-                        <option value="Machiners">Machiners</option>
-                        <option value="Toxoids">Toxoids</option>
-                        <option value="Scorchers">Scorchers</option>
-                        <option value="Glacials">Glacials</option>
-                        <option value="Specters">Specters</option>
-                        <option value="Miners">Miners</option>
-                    </select>
+        <div style="display: flex; flex-direction: row; align-items: flex-start;">
+            <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 7.5em;">
+                <div class="battle-block" style="margin-top: 0;">
+                    <div class="block-label">Battle Simulation</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="n_fights">Number of fights:</label>
+                            <input type="number" id="n_fights" name="n_fights" value="1000" min="1">
+                        </div>
+                        <div class="form-group" style="align-items: flex-start; justify-content: flex-start;">
+                            <button id="simulateBtn" type="button">Simulate</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="mob_level">Level:</label>
-                    <div class="input-group">
-                        <button type="button" class="minus-btn" data-target="mob_level">-</button>
-                        <input type="number" id="mob_level" name="mob_level" value="1" min="1">
-                        <button type="button" class="plus-btn" data-target="mob_level">+</button>
+                <div class="optimizer-block" style="margin-top: 1.5em; background: #f8f8f8; border-radius: 6px; border: 1px solid #e0e0e0; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box; width: 370px; min-width: 370px; max-width: 370px; min-height: 170px;">
+                    <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 1.1em;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em; min-width: 90px;">
+                            <div class="block-label" style="margin-bottom: 0.2em;">Optimizer</div>
+                            <button id="optimizerBtn" type="button" style="margin-bottom: 0.1em;">Optimize</button>
+                        </div>
+                        <div id="optimizerResult"></div>
                     </div>
                 </div>
             </div>
