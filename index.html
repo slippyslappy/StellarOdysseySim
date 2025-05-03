@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stellar Odyssey Player Setup</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        .form-section { max-width: 900px; margin-left: 0; margin-right: auto; display: flex; flex-direction: row; gap: 2em; }
+        body { font-family: Arial, sans-serif; margin: 2em; background: #181c24; color: #e6eaf3; }
+        .form-section { max-width: 1100px; margin-left: 0; margin-right: auto; display: flex; flex-direction: row; gap: 2em; }
         .form-section > div:first-child { flex: none; width: 420px; min-width: 420px; }
         .form-row { display: flex; gap: 1em; margin-bottom: 1em; }
-        .form-group { flex: 1; display: flex; flex-direction: column; min-width: 180px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; min-width: 180px; color: #e6eaf3; font-size: 1.08em; }
         .input-group { display: flex; align-items: center; }
         .input-group button {
             width: 2.2em;
@@ -17,8 +17,9 @@
             font-size: 1.1em;
             margin: 0 0.2em;
             border-radius: 4px;
-            border: 1px solid #aaa;
-            background: #f5f5f5;
+            border: 1px solid #2c3242;
+            background: #36405a;
+            color: #e6eaf3;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -28,7 +29,7 @@
             box-sizing: border-box;
         }
         .input-group button:active {
-            background: #e0e0e0;
+            background: #2a3142;
         }
         .input-group input[type=number] {
             width: 3.84em;
@@ -36,7 +37,9 @@
             font-size: 1.14em;
             text-align: center;
             border-radius: 4px;
-            border: 1px solid #aaa;
+            border: 1px solid #2c3242;
+            background: #36405a;
+            color: #e6eaf3;
             box-sizing: border-box;
         }
         .clone-modifiers-section {
@@ -49,9 +52,9 @@
             margin-left: 40px;
         }
         .clone-modifiers-block {
-            background: #f8f8f8;
+            background: #23283a;
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #2c3242;
             padding: 0.25em 0.5em 0.15em 0.5em;
             display: flex;
             flex-direction: column;
@@ -63,39 +66,46 @@
             min-height: 110px;
             max-height: 110px;
             box-sizing: border-box;
-            font-size: 0.93em;
+            font-size: 0.98em;
+            color: #e6eaf3;
         }
         .clone-modifiers-block:nth-child(2n) {
             margin-left: 2em;
         }
         .clone-label {
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 0.25em;
             text-align: center;
-            font-size: 1em;
+            font-size: 1.04em;
+            color: #e6eaf3;
         }
         .clone-field-group {
             display: flex;
             align-items: center;
             gap: 0.15em;
             margin-bottom: 0.15em;
+            color: #e6eaf3;
         }
         .clone-field-group label {
             margin-bottom: 0;
-            font-size: 0.90em;
+            font-size: 0.97em;
             min-width: 90px;
             white-space: nowrap;
+            color: #e6eaf3;
         }
         .clone-field-group input[type=number] {
             width: 3.2em;
             height: 1.1em;
-            font-size: 0.95em;
+            font-size: 0.98em;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         .clone-field-group .minus-btn,
         .clone-field-group .plus-btn {
             width: 1.44em;
             height: 1.08em;
-            font-size: 0.85em;
+            font-size: 0.92em;
             margin: 0 0.08em;
             display: flex;
             align-items: center;
@@ -103,11 +113,26 @@
             vertical-align: middle;
             padding: 0;
             line-height: 1;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         label { margin-bottom: 0.2em; }
-        button[type=button], button[type=submit] { margin-top: 1em; padding: 0.5em 1em; }
-        .block-label { font-size: 1.2em; font-weight: bold; margin-bottom: 0.5em; }
-        #playerResult { margin-top: 1.5em; font-size: 1.1em; }
+        button[type=button], button[type=submit] {
+            margin-top: 1em; padding: 0.5em 1em;
+            background: #36405a;
+            color: #f3f6fa;
+            border: 1px solid #4a5a7c;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            transition: background 0.2s, color 0.2s;
+        }
+        button[type=button]:hover, button[type=submit]:hover {
+            background: #4a5a7c;
+            color: #fff;
+        }
+        .block-label { font-size: 1.22em; font-weight: 700; margin-bottom: 0.5em; color: #f3f6fa; letter-spacing: 0.01em; }
+        #playerResult { margin-top: 1.5em; font-size: 1.1em; color: #f3f6fa; }
         @media (max-width: 900px) {
             .form-section { max-width: 100%; }
             .form-row { flex-direction: column; }
@@ -125,15 +150,21 @@
             vertical-align: middle;
             padding: 0;
             line-height: 1;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         #weapon_dmg,
         #shield_def {
             width: 5.0em;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         .player-block {
-            background: #f8f8f8;
+            background: #23283a;
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #2c3242;
             padding: 0.7em 1.2em 0.5em 1.2em;
             box-sizing: border-box;
             width: 420px;
@@ -142,9 +173,9 @@
             margin-bottom: 1em;
         }
         .mob-block {
-            background: #f8f8f8;
+            background: #23283a;
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #2c3242;
             padding: 0.7em 1.2em 0.5em 1.2em;
             box-sizing: border-box;
             width: 420px;
@@ -156,27 +187,55 @@
         }
         #mob_name {
             font-size: 1.0em;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         #weapon_ele1,
         #weapon_ele2 {
             font-size: 1.0em;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         #shield_ele1,
         #shield_ele2 {
             font-size: 1.0em;
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
         .battle-block {
-            background: #f8f8f8;
+            background: #23283a;
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #2c3242;
             padding: 0.7em 1.2em 0.5em 1.2em;
             box-sizing: border-box;
             width: 370px;
             min-width: 370px;
             max-width: 370px;
-            margin-bottom: 1em;
+            margin-bottom: -0.5em;
             margin-top: 5.0em;
             min-height: 170px;
+            color: #e6eaf3;
+        }
+        .optimizer-block {
+            background: #23283a !important;
+            border-radius: 6px;
+            border: 1px solid #2c3242 !important;
+            padding: 0.7em 1.2em 0.5em 1.2em;
+            box-sizing: border-box;
+            width: 370px;
+            min-width: 370px;
+            max-width: 370px;
+            min-height: 170px;
+            color: #e6eaf3;
+        }
+        footer { color: #b0b6c6; font-size: 0.98em; }
+        #n_fights {
+            background: #36405a;
+            color: #e6eaf3;
+            border: 1px solid #2c3242;
         }
     </style>
     <script type="module">
@@ -545,6 +604,7 @@
     </script>
 </head>
 <body>
+    <div style="font-size: 1.7em; font-weight: 600; margin-bottom: 1.2em; letter-spacing: 0.01em;">Stellar Odyssey Simulator and Optimizer</div>
     <form id="playerForm" class="form-section" autocomplete="off" style="display: flex; flex-direction: row; gap: 2em;">
         <div style="flex: 3;">
             <div class="player-block" style="width: 420px; min-width: 420px; max-width: 420px;">
@@ -702,7 +762,7 @@
         <div style="display: flex; flex-direction: row; align-items: flex-start;">
             <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 7.5em;">
-                <div class="battle-block" style="margin-top: 0;">
+                <div class="battle-block" style="margin-top: 0; margin-left: 5px">
                     <div class="block-label">Battle Simulation</div>
                     <div class="form-row">
                         <div class="form-group">
@@ -714,7 +774,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="optimizer-block" style="margin-top: 1.5em; background: #f8f8f8; border-radius: 6px; border: 1px solid #e0e0e0; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box; width: 370px; min-width: 370px; max-width: 370px; min-height: 170px;">
+                <div class="optimizer-block" style="margin-top: 1.5em; background: #f8f8f8; margin-left: 5px; border-radius: 6px; border: 1px solid #e0e0e0; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box; width: 370px; min-width: 370px; max-width: 370px; min-height: 170px;">
                     <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 1.1em;">
                         <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em; min-width: 90px;">
                             <div class="block-label" style="margin-bottom: 0.2em;">Optimizer</div>
@@ -727,5 +787,21 @@
         </div>
     </form>
     <div id="playerResult"></div>
+    <footer style="margin-top: 12em; font-size: 1em; color: #928e8e; text-align: left;">
+        <span>Proudly made by anfneub</span>
+        <span style="margin-left: 2.5em;" id="lastUpdated"></span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version: 1.0.4 2025-04-30</span>
+    </footer>
+    <script>
+        // Set last updated date/time
+        const lastUpdated = document.getElementById('lastUpdated');
+        if (lastUpdated) {
+            const now = new Date();
+            const pad = n => n.toString().padStart(2, '0');
+            const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
+        }
+    </script>
 </body>
 </html> 
