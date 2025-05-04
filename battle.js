@@ -46,10 +46,13 @@ class Battle {
                     curr_dmg = curr_dmg * (1 + attacker.crit_dmg);
                 }
                 // Elemental bonus logic for two weapon and two shield modifications
-                const modifications = [
-                    attacker.weapon_ele1, attacker.weapon_ele2,
-                    attacker.shield_ele1, attacker.shield_ele2
-                ];
+                let weapon1 = attacker.weapon_ele1, weapon2 = attacker.weapon_ele2;
+                if ((weapon1 && (!weapon2 || weapon2 === 'None')) && weapon1 !== 'None') weapon2 = weapon1;
+                if ((weapon2 && (!weapon1 || weapon1 === 'None')) && weapon2 !== 'None') weapon1 = weapon2;
+                let shield1 = attacker.shield_ele1, shield2 = attacker.shield_ele2;
+                if ((shield1 && (!shield2 || shield2 === 'None')) && shield1 !== 'None') shield2 = shield1;
+                if ((shield2 && (!shield1 || shield1 === 'None')) && shield2 !== 'None') shield1 = shield2;
+                const modifications = [weapon1, weapon2, shield1, shield2];
                 const target_weaknesses = target.weaknesses || [];
                 let total_damage_modifier = 0.0;
                 for (const mod of modifications) {
@@ -82,10 +85,13 @@ class Battle {
                         curr_dmg = curr_dmg * (1 + attacker.crit_dmg);
                     }
                     // Elemental bonus logic for dual shot
-                    const modifications = [
-                        attacker.weapon_ele1, attacker.weapon_ele2,
-                        attacker.shield_ele1, attacker.shield_ele2
-                    ];
+                    let weapon1 = attacker.weapon_ele1, weapon2 = attacker.weapon_ele2;
+                    if ((weapon1 && (!weapon2 || weapon2 === 'None')) && weapon1 !== 'None') weapon2 = weapon1;
+                    if ((weapon2 && (!weapon1 || weapon1 === 'None')) && weapon2 !== 'None') weapon1 = weapon2;
+                    let shield1 = attacker.shield_ele1, shield2 = attacker.shield_ele2;
+                    if ((shield1 && (!shield2 || shield2 === 'None')) && shield1 !== 'None') shield2 = shield1;
+                    if ((shield2 && (!shield1 || shield1 === 'None')) && shield2 !== 'None') shield1 = shield2;
+                    const modifications = [weapon1, weapon2, shield1, shield2];
                     const target_weaknesses = target.weaknesses || [];
                     let total_damage_modifier = 0.0;
                     for (const mod of modifications) {
