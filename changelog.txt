@@ -1,5 +1,8 @@
+
+2025-05-04 20:34
+- Improved the optimization logic, should now produce much better results than before (but are they optimal? who knows!). Thanks to kontors and Maliciousism for their suggestions
  
-2025-05-04 15:16
+2025-05-04 13:16
 
 - Introduced Changelog
 - Maximum number of fights in Simulation is now 1'000'000. Any number bigger than that will result in 1'000'000 fights being executed anyway
