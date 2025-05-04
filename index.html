@@ -517,36 +517,11 @@
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
                 });
 
-                // --- Inline optimizer logic (from optimizer.js) ---
-                const nb_points = Math.floor((player.pow + player.pre + player.eva + player.hull) / 5);
-                // Distribute points (copied from optimizer.js)
-                const k = 4;
-                const ratio = [1, 4, 4, 3];
-                const ratio_sum = ratio.reduce((a, b) => a + b, 0);
-                const ideal = ratio.map(r => Math.round(nb_points * r / ratio_sum));
-                const tolerance = 4;
-                const results = [];
-                function helper(remaining, parts) {
-                    if (parts.length === k - 1) {
-                        const last = remaining;
-                        const lcl = parts.concat([last]);
-                        if (lcl.every((val, i) => Math.abs(val - ideal[i]) <= tolerance)) {
-                            results.push(lcl);
-                        }
-                        return;
-                    }
-                    for (let i = 0; i <= remaining; i++) {
-                        helper(remaining - i, parts.concat([i]));
-                    }
-                }
-                helper(nb_points, []);
-                const possible_distributions = results;
-                const opt_results = [];
-                for (const d of possible_distributions) {
-                    const power = 5 * d[0];
-                    const precision = 5 * d[1];
-                    const evasion = 5 * d[2];
-                    const hull = 5 * d[3];
+                // Use Optimizer.optimize_kontors()
+                const optimizer = new Optimizer(player, mob, list_modifiers);
+                const result = optimizer.optimize();
+                if (result && result.bestStats && result.winChance !== undefined) {
+                    const [power, precision, evasion, hull] = result.bestStats;
                     const tmp_player = new Player({
                         power,
                         precision,
@@ -562,32 +537,10 @@
                         shield_ele2: player.shield_ele2
                     });
                     const battle = new Battle({ player: tmp_player, mob: mob, list_modifiers: list_modifiers });
-                    const win_chance = battle.repeat_fights(1000);
-                    opt_results.push({ Stats: [power, precision, evasion, hull], 'Win chance': win_chance });
-                }
-                opt_results.sort((a, b) => b['Win chance'] - a['Win chance']);
-                if (opt_results.length > 0) {
-                    const best = opt_results[0];
-                    const [power, precision, evasion, hull] = best.Stats;
-                    const final_player = new Player({
-                        power,
-                        precision,
-                        evasion,
-                        hull,
-                        weapon_dmg: player.weapon_dmg,
-                        shield_def: player.shield_def,
-                        n_clones: player.n_clones,
-                        vip_status: player.vip_status,
-                        weapon_ele1: player.weapon_ele1,
-                        weapon_ele2: player.weapon_ele2,
-                        shield_ele1: player.shield_ele1,
-                        shield_ele2: player.shield_ele2
-                    });
-                    const battle = new Battle({ player: final_player, mob: mob, list_modifiers: list_modifiers });
-                    const creditsPerHour = battle.get_revenue('hourly', best['Win chance']);
-                    const creditsPerDay = battle.get_revenue('daily', best['Win chance']);
-                    const expPerHour = battle.get_experience('hourly', best['Win chance']);
-                    const expPerDay = battle.get_experience('daily', best['Win chance']);
+                    const creditsPerHour = battle.get_revenue('hourly', result.winChance);
+                    const creditsPerDay = battle.get_revenue('daily', result.winChance);
+                    const expPerHour = battle.get_experience('hourly', result.winChance);
+                    const expPerDay = battle.get_experience('daily', result.winChance);
                     optimizerResultDiv.innerHTML = `
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2em 1.2em; width: 140px; margin-bottom: 1em; font-size: 1em; margin-left: 20px;">
                             <div><b>Power</b><br>${power}</div>
@@ -596,7 +549,7 @@
                             <div><b>Hull</b><br>${hull}</div>
                         </div>
                         <div style="font-size: 0.98em; margin-top: 0.2em;">
-                            <div><b>Win chance:</b> ${(best['Win chance'] * 100).toFixed(2)}%</div>
+                            <div><b>Win chance:</b> ${(result.winChance * 100).toFixed(2)}%</div>
                             <div><b>Credits per hour:</b> ${millify(creditsPerHour)}/h</div>
                             <div><b>Credits per day:</b> ${millify(creditsPerDay)}/day</div>
                             <div><b>Experience per hour:</b> ${millify(expPerHour)}/h</div>
@@ -624,7 +577,6 @@
                     };
                 } else {
                     optimizerResultDiv.innerHTML = '<span style="color: #a00">No result</span>';
-                    // Remove Import button if present
                     let importBtn = document.getElementById('importOptimizedBtn');
                     if (importBtn) importBtn.remove();
                 }
