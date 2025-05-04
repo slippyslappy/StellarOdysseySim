@@ -180,6 +180,20 @@ class Battle {
         }
         return 0.0;
     }
+
+    get_experience(exp_type, win_chance = 1.0) {
+        let exp_base = 20.0 + Math.floor(0.1 * this.mob.lvl);
+        if (this.player.vip_status) {
+            exp_base = 22.0 + Math.floor(0.1 * this.mob.lvl);
+        }
+        if (exp_type === 'hourly') {
+            return exp_base * 10 * 60 * win_chance;
+        } else if (exp_type === 'daily') {
+            return exp_base * 10 * 24 * 60 * win_chance;
+        }
+        return 0.0;
+    }
+
 }
 
 export { Battle }; 

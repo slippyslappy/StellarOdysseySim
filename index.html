@@ -100,6 +100,7 @@
             background: #36405a;
             color: #e6eaf3;
             border: 1px solid #2c3242;
+            padding-left: 5px;
         }
         .clone-field-group .minus-btn,
         .clone-field-group .plus-btn {
@@ -216,7 +217,7 @@
             max-width: 370px;
             margin-bottom: -0.5em;
             margin-top: 5.0em;
-            min-height: 170px;
+            min-height: 230px;
             color: #e6eaf3;
         }
         .optimizer-block {
@@ -228,7 +229,7 @@
             width: 370px;
             min-width: 370px;
             max-width: 370px;
-            min-height: 170px;
+            min-height: 230px;
             color: #e6eaf3;
         }
         footer { color: #b0b6c6; font-size: 0.98em; }
@@ -448,7 +449,12 @@
                 const mob = new Mob(MobName[mob_enum_key], mob_level);
 
                 // Number of fights
-                const n_fights = parseInt(form.n_fights.value) || 1000;
+                let n_fights = parseInt(form.n_fights.value) || 1000;
+                if (n_fights < 1) n_fights = 1;
+                if (n_fights > 1000000) {
+                    n_fights = 1000000;
+                    form.n_fights.value = 1000000;
+                }
 
                 // Create player
                 const player = new Player({
@@ -463,9 +469,13 @@
                 // Print result
                 const creditsPerHour = battle.get_revenue('hourly', win_chance);
                 const creditsPerDay = battle.get_revenue('daily', win_chance);
+                const expPerHour = battle.get_experience('hourly', win_chance);
+                const expPerDay = battle.get_experience('daily', win_chance);
                 battleResultDiv.innerHTML = `<b>Win chance:</b> ${(win_chance * 100).toFixed(2)}%<br>` +
                     `<b>Credits per hour:</b> ${millify(creditsPerHour)}/h<br>` +
-                    `<b>Credits per day:</b> ${millify(creditsPerDay)}/day`;
+                    `<b>Credits per day:</b> ${millify(creditsPerDay)}/day<br>` +
+                    `<b>Experience per hour:</b> ${millify(expPerHour)}/h<br>` +
+                    `<b>Experience per day:</b> ${millify(expPerDay)}/day`;
             });
 
             // Optimizer logic
@@ -576,6 +586,8 @@
                     const battle = new Battle({ player: final_player, mob: mob, list_modifiers: list_modifiers });
                     const creditsPerHour = battle.get_revenue('hourly', best['Win chance']);
                     const creditsPerDay = battle.get_revenue('daily', best['Win chance']);
+                    const expPerHour = battle.get_experience('hourly', best['Win chance']);
+                    const expPerDay = battle.get_experience('daily', best['Win chance']);
                     optimizerResultDiv.innerHTML = `
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2em 1.2em; width: 140px; margin-bottom: 1em; font-size: 1em; margin-left: 20px;">
                             <div><b>Power</b><br>${power}</div>
@@ -587,6 +599,8 @@
                             <div><b>Win chance:</b> ${(best['Win chance'] * 100).toFixed(2)}%</div>
                             <div><b>Credits per hour:</b> ${millify(creditsPerHour)}/h</div>
                             <div><b>Credits per day:</b> ${millify(creditsPerDay)}/day</div>
+                            <div><b>Experience per hour:</b> ${millify(expPerHour)}/h</div>
+                            <div><b>Experience per day:</b> ${millify(expPerDay)}/day</div>
                         </div>
                     `;
                     // Add Import button below Optimize, centered
@@ -784,19 +798,19 @@
                 <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 7.5em;">
-                <div class="battle-block" style="margin-top: 0; margin-left: 5px">
+                <div class="battle-block" style="margin-top: 0; margin-left: 5px; min-height: 210px; max-height: 210px;">
                     <div class="block-label">Battle Simulation</div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="n_fights">Number of fights:</label>
-                            <input type="number" id="n_fights" name="n_fights" value="1000" min="1">
+                            <input type="number" id="n_fights" name="n_fights" value="1000" min="1" max="1000000">
                         </div>
                         <div class="form-group" style="align-items: flex-start; justify-content: flex-start;">
                             <button id="simulateBtn" type="button">Simulate</button>
                         </div>
                     </div>
                 </div>
-                <div class="optimizer-block" style="margin-top: 1.5em; background: #f8f8f8; margin-left: 5px; border-radius: 6px; border: 1px solid #e0e0e0; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box; width: 370px; min-width: 370px; max-width: 370px; min-height: 170px;">
+                <div class="optimizer-block" style="margin-top: 1.5em; background: #f8f8f8; margin-left: 5px; border-radius: 6px; border: 1px solid #e0e0e0; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box; width: 370px; min-width: 370px; max-width: 370px; min-height: 210px;">
                     <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 1.1em;">
                         <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em; min-width: 90px;">
                             <div class="block-label" style="margin-bottom: 0.2em;">Optimizer</div>
@@ -813,6 +827,7 @@
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
         <span style="margin-left: 2.5em;">Space Odyssey Version: 1.0.4 2025-04-30</span>
+        <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
     <script>
         // Set last updated date/time
@@ -824,6 +839,51 @@
             const timeStr = "19:43";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
+    </script>
+    <!-- Changelog Modal -->
+    <div id="changelogModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+      <div style="background:#222; color:#fff; padding:1.5em; border-radius:10px; max-width:650px; width:117vw; max-width:65vw; max-height:70vh; overflow:auto; box-shadow:0 4px 32px #000; position:relative;">
+        <button id="closeChangelog" style="position:absolute; top:0.5em; right:0.5em; background:none; border:none; color:#fff; font-size:1.5em; cursor:pointer;">&times;</button>
+        <h2 style="margin-top:0;">Changelog</h2>
+        <div id="changelogContent" style="white-space:pre-wrap; background:#181818; padding:1em; border-radius:6px; max-height:50vh; overflow:auto; font-size:1em; font-family:inherit;">Loading...</div>
+      </div>
+    </div>
+    <script>
+    document.getElementById('changelogLink').addEventListener('click', function() {
+      const modal = document.getElementById('changelogModal');
+      modal.style.display = 'flex';
+      fetch('changelog.txt')
+        .then(r => r.text())
+        .then(txt => {
+          // Format lines starting with '-' as list items
+          const lines = txt.split('\n');
+          let html = '';
+          let inList = false;
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (/^\s*- /.test(line)) {
+              if (!inList) { html += '<ul style="margin:0 0 0 1.5em; padding-left:1.2em;">'; inList = true; }
+              html += '<li style="margin-bottom:0.2em;">' + line.replace(/^\s*- /, '') + '</li>';
+            } else {
+              if (inList) { html += '</ul>'; inList = false; }
+              // If the line is not empty, wrap in <div>, else add a blank line
+              html += line.trim() ? '<div>' + line + '</div>' : '<div style="height:0.7em;"></div>';
+            }
+          }
+          if (inList) html += '</ul>';
+          document.getElementById('changelogContent').innerHTML = html;
+        })
+        .catch(() => {
+          document.getElementById('changelogContent').textContent = 'Could not load changelog.';
+        });
+    });
+    document.getElementById('closeChangelog').addEventListener('click', function() {
+      document.getElementById('changelogModal').style.display = 'none';
+    });
+    // Optional: close modal on outside click
+    document.getElementById('changelogModal').addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
     </script>
 </body>
 </html> 
