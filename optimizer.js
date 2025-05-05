@@ -69,7 +69,16 @@ class Optimizer {
     }
 
     optimize_kontors() {
-        const hits_to_die = 4;
+
+        if (this.player.n_clones < 5) {
+            const hits_to_die = 5;
+            const hits_to_kill = 7;
+        }
+        else {
+            const hits_to_die = 4;
+            const hits_to_kill = 6;
+        }
+
         const total_hp_to_have = (hits_to_die - 1) * this.mob.dmg + 1;
         const remaining_hp = Math.max(0.0, total_hp_to_have - this.player.shield_def);
         const needed_hull = Math.ceil(remaining_hp / 7.0);
@@ -89,7 +98,6 @@ class Optimizer {
             }
         }
 
-        const hits_to_kill = 6;
         const total_attack_to_have = this.mob.hp / hits_to_kill + 1;
         const needed_pow = Math.ceil(Math.max(0.0, (total_attack_to_have - this.player.n_clones * this.player.weapon_dmg * (1 + total_damage_modifier)) / (7.0 * this.player.n_clones * (1 + total_damage_modifier))));
 
