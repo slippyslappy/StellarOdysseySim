@@ -69,14 +69,17 @@ class Optimizer {
     }
 
     optimize_kontors() {
+        // Declare the variables outside the if-else blocks
+        let hits_to_die;
+        let hits_to_kill;
 
         if (this.player.n_clones < 5) {
-            const hits_to_die = 5;
-            const hits_to_kill = 7;
+            hits_to_die = 5;
+            hits_to_kill = 7;
         }
         else {
-            const hits_to_die = 4;
-            const hits_to_kill = 6;
+            hits_to_die = 4;
+            hits_to_kill = 6;
         }
 
         const total_hp_to_have = (hits_to_die - 1) * this.mob.dmg + 1;
