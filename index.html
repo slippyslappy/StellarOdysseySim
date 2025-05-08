@@ -276,22 +276,68 @@
             const cloneModifiersSection = document.getElementById('cloneModifiersSection');
             let cloneModifiers = [];
 
-            // Apply DEFAULTS to form fields
-            Object.entries(DEFAULTS).forEach(([key, value]) => {
-                const el = document.getElementById(key);
-                if (!el) return;
-                if (el.type === "checkbox") {
-                    el.checked = !!value;
-                } else {
-                    el.value = value;
-                }
-            });
+            // Function to save all settings to localStorage
+            function saveSettings() {
+                const settings = {
+                    // Player stats
+                    power: form.power.value,
+                    precision: form.precision.value,
+                    evasion: form.evasion.value,
+                    hull: form.hull.value,
+                    weapon_dmg: form.weapon_dmg.value,
+                    shield_def: form.shield_def.value,
+                    n_clones: form.n_clones.value,
+                    weapon_ele1: form.weapon_ele1.value,
+                    weapon_ele2: form.weapon_ele2.value,
+                    shield_ele1: form.shield_ele1.value,
+                    shield_ele2: form.shield_ele2.value,
+                    vip_status: form.vip_status.checked,
+                    // Mob settings
+                    mob_name: form.mob_name.value,
+                    mob_level: form.mob_level.value,
+                    // Clone modifiers
+                    clone_modifiers: cloneModifiers
+                };
+                localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
+            }
+
+            // Load saved settings or use defaults
+            const savedSettings = localStorage.getItem('stellarOdysseySettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                Object.entries(settings).forEach(([key, value]) => {
+                    if (key === 'clone_modifiers') {
+                        cloneModifiers = value;
+                    } else {
+                        const el = document.getElementById(key);
+                        if (!el) return;
+                        if (el.type === "checkbox") {
+                            el.checked = !!value;
+                        } else {
+                            el.value = value;
+                        }
+                    }
+                });
+                // Render clone modifiers with saved values
+                renderCloneModifiers(parseInt(settings.n_clones) || 1);
+            } else {
+                // Apply DEFAULTS to form fields
+                Object.entries(DEFAULTS).forEach(([key, value]) => {
+                    const el = document.getElementById(key);
+                    if (!el) return;
+                    if (el.type === "checkbox") {
+                        el.checked = !!value;
+                    } else {
+                        el.value = value;
+                    }
+                });
+                cloneModifiers = DEFAULTS.clone_modifiers.map(mod => ({...mod}));
+            }
             // For selects and n_clones, trigger input event to update UI
             const nClonesInput = document.getElementById('n_clones');
             nClonesInput.addEventListener('input', () => {
                 let n = Math.min(Math.max(parseInt(nClonesInput.value) || 1, 1), 10);
                 nClonesInput.value = n;
-                // Only resize the array here
                 if (cloneModifiers.length > n) {
                     cloneModifiers = cloneModifiers.slice(0, n);
                 } else if (cloneModifiers.length < n) {
@@ -299,19 +345,9 @@
                         cloneModifiers.push({ crit: 0.0, critdmg: 0.0, dual: 0.0 });
                     }
                 }
-                renderCloneModifiers(cloneModifiers.length);
+                renderCloneModifiers(n);
+                saveSettings();
             });
-            // Set mob_name select
-            if (DEFAULTS.mob_name) {
-                const mobNameSelect = document.getElementById('mob_name');
-                if (mobNameSelect) mobNameSelect.value = DEFAULTS.mob_name;
-            }
-            // Set clone modifiers if present
-            if (DEFAULTS.clone_modifiers) {
-                cloneModifiers = DEFAULTS.clone_modifiers.map(mod => ({...mod}));
-                // Render with correct number of clones
-                renderCloneModifiers(DEFAULTS.n_clones);
-            }
 
             function renderCloneModifiers(n) {
                 // Always use cloneModifiers.length as the source of truth
@@ -355,6 +391,7 @@
                             cloneModifiers[idx][field] = newVal;
                         }
                         renderCloneModifiers(cloneModifiers.length);
+                        saveSettings();
                     });
                 });
                 cloneModifiersSection.querySelectorAll('.plus-btn').forEach(btn => {
@@ -368,6 +405,7 @@
                             cloneModifiers[idx][field] = newVal;
                         }
                         renderCloneModifiers(cloneModifiers.length);
+                        saveSettings();
                     });
                 });
                 cloneModifiersSection.querySelectorAll('.clone-input').forEach(input => {
@@ -383,6 +421,7 @@
                         } else {
                             cloneModifiers[idx][field] = val;
                         }
+                        saveSettings();
                     });
                 });
             }
@@ -581,6 +620,33 @@
                     if (importBtn) importBtn.remove();
                 }
             });
+
+            // Add event listeners to save settings when values change
+            form.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', saveSettings);
+            });
+
+            // For number inputs, also save on input event for immediate feedback
+            form.querySelectorAll('input[type="number"]').forEach(element => {
+                element.addEventListener('input', saveSettings);
+            });
+
+            // Modify the clone modifiers event listeners to save settings
+            function addCloneModifierListeners() {
+                cloneModifiersSection.querySelectorAll('.minus-btn, .plus-btn, .clone-input').forEach(element => {
+                    element.addEventListener('change', saveSettings);
+                    if (element.classList.contains('clone-input')) {
+                        element.addEventListener('input', saveSettings);
+                    }
+                });
+            }
+
+            // Update the renderCloneModifiers function to add listeners
+            const originalRenderCloneModifiers = renderCloneModifiers;
+            renderCloneModifiers = function(n) {
+                originalRenderCloneModifiers(n);
+                addCloneModifierListeners();
+            };
         });
     </script>
 </head>

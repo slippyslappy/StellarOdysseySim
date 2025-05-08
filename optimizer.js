@@ -129,7 +129,7 @@ class Optimizer {
             });
             const battle = new Battle({ player: tmp_player, mob: this.mob, list_modifiers: this.list_modifiers });
             const win_chance = battle.repeat_fights(this.n_fights);
-            console.log(`[${power},${precision},${evasion},${hull}]: ${(win_chance * 100).toFixed(3)}%`);
+            // console.log(`[${power},${precision},${evasion},${hull}]: ${(win_chance * 100).toFixed(3)}%`);
             lcl_result.push({ stats: [power, precision, evasion, hull], win_chance });
         }
         const opt_results = lcl_result.sort((a, b) => b.win_chance - a.win_chance);
