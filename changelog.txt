@@ -1,4 +1,7 @@
 
+2025-05-08 19:32
+- Added local memory for last settings used. Settings should be kept in memory after refreshing
+
 2025-05-05 15:45
 - Fixed a bug with experience for higher levels
 - Improved the optimizer in the case where number of drones is smaller than 5 
