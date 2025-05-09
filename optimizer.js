@@ -4,11 +4,11 @@ import { Player } from './player.js';
 import { CloneModifiers } from './dataclasses.js';
 
 class Optimizer {
-    constructor(player, mob, list_modifiers = null) {
+    constructor(player, mob, list_modifiers = null, n_fights = 5000) {
         this.player = player;
         this.list_modifiers = list_modifiers;
         this.mob = mob;
-        this.n_fights = 5000;
+        this.n_fights = n_fights;
     }
 
     distribute_points(n_points) {
@@ -37,39 +37,7 @@ class Optimizer {
     }
 
     optimize() {
-        const opt_results = [];
-        const nb_points = Math.floor((this.player.pow + this.player.pre + this.player.eva + this.player.hull) / 5);
-        const possible_distributions = this.distribute_points(nb_points);
-        for (const d of possible_distributions) {
-            const power = 5 * d[0];
-            const precision = 5 * d[1];
-            const evasion = 5 * d[2];
-            const hull = 5 * d[3];
-            const tmp_player = new Player({
-                power,
-                precision,
-                evasion,
-                hull,
-                weapon_dmg: this.player.weapon_dmg,
-                shield_def: this.player.shield_def,
-                n_clones: this.player.n_clones,
-                vip_status: this.player.vip_status,
-                weapon_ele1: this.player.weapon_ele1,
-                weapon_ele2: this.player.weapon_ele2,
-                shield_ele1: this.player.shield_ele1,
-                shield_ele2: this.player.shield_ele2
-            });
-            const battle = new Battle({ player: tmp_player, mob: this.mob, list_modifiers: this.list_modifiers });
-            const win_chance = battle.repeat_fights(this.n_fights);
-            opt_results.push({ 'stats': [power, precision, evasion, hull], 'win_chance': win_chance });
-        }
-        opt_results.sort((a, b) => b['Win chance'] - a['Win chance']);
 
-        return { bestStats: opt_results[0]['stats'], winChance: opt_results[0]['win_chance'] };
-    }
-
-    optimize_kontors() {
-        // Declare the variables outside the if-else blocks
         let hits_to_die;
         let hits_to_kill;
 
@@ -129,7 +97,6 @@ class Optimizer {
             });
             const battle = new Battle({ player: tmp_player, mob: this.mob, list_modifiers: this.list_modifiers });
             const win_chance = battle.repeat_fights(this.n_fights);
-            // console.log(`[${power},${precision},${evasion},${hull}]: ${(win_chance * 100).toFixed(3)}%`);
             lcl_result.push({ stats: [power, precision, evasion, hull], win_chance });
         }
         const opt_results = lcl_result.sort((a, b) => b.win_chance - a.win_chance);
