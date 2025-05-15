@@ -1,4 +1,7 @@
 
+2025-05-15 20:48
+- Added resources gathering calculator
+
 2025-05-09 16:32
 - It is now possible to select the number of fights for each stat combination being tested in the optimization 
 
