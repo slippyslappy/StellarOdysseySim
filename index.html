@@ -277,6 +277,44 @@
             const cloneModifiersSection = document.getElementById('cloneModifiersSection');
             let cloneModifiers = [];
 
+            // Load saved settings or use defaults
+            const savedSettings = localStorage.getItem('stellarOdysseySettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                Object.entries(settings).forEach(([key, value]) => {
+                    if (key === 'clone_modifiers') {
+                        cloneModifiers = value;
+                    } else {
+                        const el = document.getElementById(key);
+                        if (!el) return;
+                        if (el.type === "checkbox") {
+                            el.checked = !!value;
+                        } else if (el.type === "select-one") {
+                            el.value = value || "";
+                        } else {
+                            el.value = value;
+                        }
+                    }
+                });
+                // Render clone modifiers with saved values
+                renderCloneModifiers(parseInt(settings.n_clones) || 1);
+            } else {
+                // Apply DEFAULTS to form fields
+                Object.entries(DEFAULTS).forEach(([key, value]) => {
+                    const el = document.getElementById(key);
+                    if (!el) return;
+                    if (el.type === "checkbox") {
+                        el.checked = !!value;
+                    } else if (el.type === "select-one") {
+                        el.value = value || "";
+                    } else {
+                        el.value = value;
+                    }
+                });
+                cloneModifiers = DEFAULTS.clone_modifiers.map(mod => ({...mod}));
+                renderCloneModifiers(parseInt(DEFAULTS.n_clones) || 1);
+            }
+
             // Function to save all settings to localStorage
             function saveSettings() {
                 const settings = {
@@ -298,43 +336,15 @@
                     mob_level: form.mob_level.value,
                     // Clone modifiers
                     clone_modifiers: cloneModifiers,
-                    // API key
-                    api_key: document.getElementById('api_key').value
+                    // Resources calculator
+                    resources_per_action: form.resources_per_action?.value || 0,
+                    rare_resources_per_action: form.rare_resources_per_action?.value || 0,
+                    number_of_drones: form.number_of_drones?.value || 1,
+                    dodge_percentage: form.dodge_percentage?.value || 0,
+                    rare_drop_increase: form.rare_drop_increase?.value || 0,
+                    maneuverability: form.maneuverability?.value || 0
                 };
                 localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
-            }
-
-            // Load saved settings or use defaults
-            const savedSettings = localStorage.getItem('stellarOdysseySettings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                Object.entries(settings).forEach(([key, value]) => {
-                    if (key === 'clone_modifiers') {
-                        cloneModifiers = value;
-                    } else {
-                        const el = document.getElementById(key);
-                        if (!el) return;
-                        if (el.type === "checkbox") {
-                            el.checked = !!value;
-                        } else {
-                            el.value = value;
-                        }
-                    }
-                });
-                // Render clone modifiers with saved values
-                renderCloneModifiers(parseInt(settings.n_clones) || 1);
-            } else {
-                // Apply DEFAULTS to form fields
-                Object.entries(DEFAULTS).forEach(([key, value]) => {
-                    const el = document.getElementById(key);
-                    if (!el) return;
-                    if (el.type === "checkbox") {
-                        el.checked = !!value;
-                    } else {
-                        el.value = value;
-                    }
-                });
-                cloneModifiers = DEFAULTS.clone_modifiers.map(mod => ({...mod}));
             }
 
             // For selects and n_clones, trigger input event to update UI
@@ -667,11 +677,28 @@
             // Add event listeners to save settings when values change
             form.querySelectorAll('input, select').forEach(element => {
                 element.addEventListener('change', saveSettings);
+                if (element.type === 'number' || element.type === 'text') {
+                    element.addEventListener('input', saveSettings);
+                }
             });
 
             // For number inputs, also save on input event for immediate feedback
             form.querySelectorAll('input[type="number"]').forEach(element => {
                 element.addEventListener('input', saveSettings);
+            });
+
+            // Add event listeners for all minus/plus buttons
+            document.querySelectorAll('.minus-btn, .plus-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    if (targetId) {
+                        const input = document.getElementById(targetId);
+                        if (input) {
+                            input.dispatchEvent(new Event('input'));
+                            saveSettings();
+                        }
+                    }
+                });
             });
 
             // Modify the clone modifiers event listeners to save settings
