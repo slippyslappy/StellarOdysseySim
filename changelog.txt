@@ -1,5 +1,5 @@
 2025-05-19 12:58
-- Added link to Konters' resources calculator
+- Added link to Kontors' resources calculator
 
 2025-05-16 08:14
 - Added Squadron boost to income and experience results. Slight differences between simulator and in game log are due to rounding errors
