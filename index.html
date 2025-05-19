@@ -965,7 +965,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="optimizer-block" style="margin-top: 1.0em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px;">
+                <div class="optimizer-block" style="margin-top: 1.0em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px; position: relative;">
+                    <div style="position: absolute; top: 0.5em; right: 1em; text-align: left; font-size: 0.75em; color: #b0b6c6; line-height: 1.2;">
+                        For a more precise resources<br>
+                        calculator, see this <a href="https://docs.google.com/spreadsheets/d/1DCpkdBsHL_dqa_Fv13k3M1iKVuBCa4vXbfTjToQ64G8/edit?gid=1892479921#gid=1892479921" target="_blank" style="color: #4fa3ff; text-decoration: none;">Google Sheet</a>
+                    </div>
                     <div class="block-label">Resources Calculator
                         <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Calculate resource gathering rates and time to reach specific goals based on your current setup.
 • 'Resources' and 'Rare resources' per action refer to what you are currently gathering on your current planet
@@ -1047,7 +1051,7 @@
         </div>
     </form>
     <div id="playerResult"></div>
-    <footer style="margin-top: 6em; font-size: 1em; color: #928e8e; text-align: left;">
+    <footer style="margin-top: -2.5em; font-size: 1em; color: #928e8e; text-align: left;">
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
         <span style="margin-left: 2.5em;">Space Odyssey Version 1.0.15 2025-05-13</span>
@@ -1059,8 +1063,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-05-16";
-            const timeStr = "08:14";
+            const dateStr = "2025-05-19";
+            const timeStr = "12:58";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>
