@@ -358,7 +358,7 @@
                 let n = Math.min(Math.max(parseInt(nClonesInput.value) || 1, 1), 10);
                 nClonesInput.value = n;
                 if (cloneModifiers.length > n) {
-                    cloneModifiers = cloneModifiers.slice(0, n);
+                    cloneModifiers = cloneModifiers.slice(0, n);re
                 } else if (cloneModifiers.length < n) {
                     while (cloneModifiers.length < n) {
                         cloneModifiers.push({ crit: 0.0, critdmg: 0.0, dual: 0.0 });
@@ -845,7 +845,7 @@
 
                 // Handle spacestation incomeboost
                 if (data.spacestation && data.spacestation.incomeboost) {
-                    form.income_boost.value = data.spacestation.incomeboost;
+                    form.income_boost.value = data.spacestation.incomeboost * 2.0;
                 } else {
                     form.income_boost.value = 0;
                 }
