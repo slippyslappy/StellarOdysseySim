@@ -729,6 +729,126 @@
                 originalRenderCloneModifiers(n);
                 addCloneModifierListeners();
             };
+            
+            
+            // Add API import functionality
+            const importBtn = document.getElementById('importBtn');
+            const apiKeyInput = document.getElementById('api_key');
+            
+            async function fetchUserData(apiKey) {
+                try {
+                    const response = await axios({
+                        method: 'get',
+                        url: `https://api.stellarodyssey.app/api/public/user?apikey=${apiKey}`,
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        timeout: 5000
+                    });
+                    return response.data;
+                } catch (error) {
+                    let errorMessage = 'Failed to fetch user data. ';
+                    
+                    if (error.response) {
+                        errorMessage += `Server responded with status ${error.response.status}. `;
+                        if (error.response.status === 401) {
+                            errorMessage += 'Invalid API key.';
+                        } else if (error.response.status === 404) {
+                            errorMessage += 'User not found.';
+                        }
+                    } else if (error.request) {
+                        errorMessage += 'No response from server. Please check your internet connection and verify the API endpoint is correct.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    throw new Error(errorMessage);
+                }
+            }
+
+            function updateFormWithUserData(userData) {
+                const data = userData.data;
+                
+                document.getElementById('power').value = data.stats.power;
+                document.getElementById('precision').value = data.stats.precision;
+                document.getElementById('evasion').value = data.stats.evasion;
+                document.getElementById('hull').value = data.stats.hull;
+                document.getElementById('vip_status').checked = data.premium;
+                
+                const weapon = data.ship.weapon;
+                const shield = data.ship.shield;
+                
+                document.getElementById('weapon_dmg').value = weapon.value;
+                document.getElementById('shield_def').value = shield.value;
+                
+                if (weapon.bonuses && weapon.bonuses.length > 0) {
+                    const firstBonus = weapon.bonuses[0].charAt(0).toUpperCase() + weapon.bonuses[0].slice(1);
+                    document.getElementById('weapon_ele1').value = firstBonus;
+                    
+                    if (weapon.bonuses.length > 1 && weapon.bonuses[1]) {
+                        const secondBonus = weapon.bonuses[1].charAt(0).toUpperCase() + weapon.bonuses[1].slice(1);
+                        document.getElementById('weapon_ele2').value = secondBonus;
+                    } else {
+                        document.getElementById('weapon_ele2').value = "";
+                    }
+                }
+                
+                if (shield.bonuses && shield.bonuses.length > 0) {
+                    const firstBonus = shield.bonuses[0].charAt(0).toUpperCase() + shield.bonuses[0].slice(1);
+                    document.getElementById('shield_ele1').value = firstBonus;
+                    
+                    if (shield.bonuses.length > 1 && shield.bonuses[1]) {
+                        const secondBonus = shield.bonuses[1].charAt(0).toUpperCase() + shield.bonuses[1].slice(1);
+                        document.getElementById('shield_ele2').value = secondBonus;
+                    } else {
+                        document.getElementById('shield_ele2').value = "";
+                    }
+                }
+                
+                const nClones = data.clones.length;
+                document.getElementById('n_clones').value = nClones;
+                
+                cloneModifiers = data.clones.map(clone => ({
+                    crit: clone.critical_chance,
+                    critdmg: clone.critical_damage,
+                    dual: clone.dual_shot
+                }));
+
+                if (data.actions) {
+                    const mobName = data.actions.currentNpc.charAt(0).toUpperCase() + data.actions.currentNpc.slice(1);
+                    document.getElementById('mob_name').value = mobName;
+                    document.getElementById('mob_level').value = data.actions.currentNpcLevel;
+                }
+                
+                const nClonesInput = document.getElementById('n_clones');
+                nClonesInput.dispatchEvent(new Event('input'));
+                
+                saveSettings();
+            }
+
+            importBtn.addEventListener('click', async () => {
+                const apiKey = apiKeyInput.value.trim();
+                if (!apiKey) {
+                    alert('Please enter your API key');
+                    return;
+                }
+
+                try {
+                    importBtn.disabled = true;
+                    importBtn.textContent = 'Importing...';
+
+                    const userData = await fetchUserData(apiKey);
+                    updateFormWithUserData(userData);
+                    
+                    importBtn.disabled = false;
+                    importBtn.textContent = 'Import';
+                } catch (error) {
+                    alert(error.message);
+                    
+                    importBtn.disabled = false;
+                    importBtn.textContent = 'Import';
+                }
+            });
+   
         });
     </script>
 </head>
@@ -921,6 +1041,22 @@
                 <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 7.5em;">
+<!--
+                <div class="api-block" style="margin-top: 0; margin-left: 5px; min-height: 110px; max-height: 110px; width: 450px; min-width: 450px; max-width: 450px; background: #23283a; border-radius: 6px; border: 1px solid #2c3242; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box;">
+                    <div class="block-label">Import data
+                        <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Import your player, mob and clone stats using your API key. This will automatically fill in all your current stats. Your API key is located in Settings">ⓘ</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="api_key">API Key:</label>
+                            <input type="text" id="api_key" name="api_key" style="width: 150%; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; padding: 0.2em;">
+                        </div>
+                        <div class="form-group" style="align-items: flex-start; justify-content: flex-start; margin-left: 110px;">
+                            <button id="importBtn" type="button">Import</button>
+                        </div>
+                    </div>
+                </div>
+-->
                 <div class="battle-block" style="margin-top: 0.0em; margin-left: 5px; min-height: 210px; max-height: 210px;width: 350px; min-width: 350px; max-width: 350px">
                     <div class="block-label">Battle Simulation
                         <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Run a battle simulation with the current configuration. The simulation will execute the specified number of battles (up to 1,000,000) to calculate win probability and resource gains.">ⓘ</span>
@@ -1054,7 +1190,7 @@
     <footer style="margin-top: -2.5em; font-size: 1em; color: #928e8e; text-align: left;">
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
-        <span style="margin-left: 2.5em;">Space Odyssey Version 1.0.15 2025-05-13</span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version 1.0.16 2025-05-25</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
     <script>
@@ -1063,8 +1199,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-05-19";
-            const timeStr = "12:58";
+            const dateStr = "2025-05-25";
+            const timeStr = "11:50";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>

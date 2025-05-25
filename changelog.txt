@@ -1,3 +1,6 @@
+2025-05-25 11:50
+- Updates NPC values scaling as per new patch 
+
 2025-05-19 12:58
 - Added link to Kontors' resources calculator
 
