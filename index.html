@@ -345,7 +345,9 @@
                     number_of_drones: form.number_of_drones?.value || 1,
                     dodge_percentage: form.dodge_percentage?.value || 0,
                     rare_drop_increase: form.rare_drop_increase?.value || 0,
-                    maneuverability: form.maneuverability?.value || 0
+                    maneuverability: form.maneuverability?.value || 0,
+                    // API key
+                    api_key: form.api_key?.value || ''
                 };
                 localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
             }
@@ -747,6 +749,7 @@
                     });
                     return response.data;
                 } catch (error) {
+
                     let errorMessage = 'Failed to fetch user data. ';
                     
                     if (error.response) {
@@ -760,7 +763,11 @@
                     } else if (error.code === 'ECONNABORTED') {
                         errorMessage += 'Request timed out.';
                     } else if (error.code === 'ERR_NETWORK') {
-                        errorMessage += 'Network error. Please check your internet connection.';
+                        if (error.message.includes('CORS')) {
+                            errorMessage += 'CORS error: The API server is not configured to allow requests from this domain. Please contact the API administrators.';
+                        } else {
+                            errorMessage += 'Network error. Please check your internet connection.';
+                        }
                     } else {
                         errorMessage += error.message;
                     }
@@ -772,56 +779,86 @@
             function updateFormWithUserData(userData) {
                 const data = userData.data;
                 
-                document.getElementById('power').value = data.stats.power;
-                document.getElementById('precision').value = data.stats.precision;
-                document.getElementById('evasion').value = data.stats.evasion;
-                document.getElementById('hull').value = data.stats.hull;
-                document.getElementById('vip_status').checked = data.premium;
-                
-                const weapon = data.ship.weapon;
-                const shield = data.ship.shield;
-                
-                document.getElementById('weapon_dmg').value = weapon.value;
-                document.getElementById('shield_def').value = shield.value;
-                
-                if (weapon.bonuses && weapon.bonuses.length > 0) {
-                    const firstBonus = weapon.bonuses[0].charAt(0).toUpperCase() + weapon.bonuses[0].slice(1);
-                    document.getElementById('weapon_ele1').value = firstBonus;
-                    
-                    if (weapon.bonuses.length > 1 && weapon.bonuses[1]) {
-                        const secondBonus = weapon.bonuses[1].charAt(0).toUpperCase() + weapon.bonuses[1].slice(1);
-                        document.getElementById('weapon_ele2').value = secondBonus;
-                    } else {
-                        document.getElementById('weapon_ele2').value = "";
-                    }
+                // Update form fields with API data
+                if (data.stats) {
+                    form.power.value = data.stats.power || 0;
+                    form.precision.value = data.stats.precision || 0;
+                    form.evasion.value = data.stats.evasion || 0;
+                    form.hull.value = data.stats.hull || 0;
                 }
-                
-                if (shield.bonuses && shield.bonuses.length > 0) {
-                    const firstBonus = shield.bonuses[0].charAt(0).toUpperCase() + shield.bonuses[0].slice(1);
-                    document.getElementById('shield_ele1').value = firstBonus;
-                    
-                    if (shield.bonuses.length > 1 && shield.bonuses[1]) {
-                        const secondBonus = shield.bonuses[1].charAt(0).toUpperCase() + shield.bonuses[1].slice(1);
-                        document.getElementById('shield_ele2').value = secondBonus;
-                    } else {
-                        document.getElementById('shield_ele2').value = "";
-                    }
-                }
-                
-                const nClones = data.clones.length;
-                document.getElementById('n_clones').value = nClones;
-                
-                cloneModifiers = data.clones.map(clone => ({
-                    crit: clone.critical_chance,
-                    critdmg: clone.critical_damage,
-                    dual: clone.dual_shot
-                }));
 
-                if (data.actions) {
-                    const mobName = data.actions.currentNpc.charAt(0).toUpperCase() + data.actions.currentNpc.slice(1);
-                    document.getElementById('mob_name').value = mobName;
-                    document.getElementById('mob_level').value = data.actions.currentNpcLevel;
+                // Update ship data
+                if (data.ship) {
+                    if (data.ship.weapon) {
+                        form.weapon_dmg.value = data.ship.weapon.value || 0;
+                        if (data.ship.weapon.bonuses && data.ship.weapon.bonuses.length > 0) {
+                            form.weapon_ele1.value = data.ship.weapon.bonuses[0].charAt(0).toUpperCase() + data.ship.weapon.bonuses[0].slice(1);
+                            if (data.ship.weapon.bonuses.length > 1) {
+                                form.weapon_ele2.value = data.ship.weapon.bonuses[1].charAt(0).toUpperCase() + data.ship.weapon.bonuses[1].slice(1);
+                            } else {
+                                form.weapon_ele2.value = '';
+                            }
+                        } else {
+                            form.weapon_ele1.value = '';
+                            form.weapon_ele2.value = '';
+                        }
+                    }
+
+                    if (data.ship.shield) {
+                        form.shield_def.value = data.ship.shield.value || 0;
+                        if (data.ship.shield.bonuses && data.ship.shield.bonuses.length > 0) {
+                            form.shield_ele1.value = data.ship.shield.bonuses[0].charAt(0).toUpperCase() + data.ship.shield.bonuses[0].slice(1);
+                            if (data.ship.shield.bonuses.length > 1) {
+                                form.shield_ele2.value = data.ship.shield.bonuses[1].charAt(0).toUpperCase() + data.ship.shield.bonuses[1].slice(1);
+                            } else {
+                                form.shield_ele2.value = '';
+                            }
+                        } else {
+                            form.shield_ele1.value = '';
+                            form.shield_ele2.value = '';
+                        }
+                    }
                 }
+
+                // Update VIP status
+                form.vip_status.checked = data.premium || false;
+
+                // Update number of clones and clone modifiers
+                if (data.clones && data.clones.length > 0) {
+                    form.n_clones.value = data.clones.length;
+                    cloneModifiers = data.clones.map(clone => ({
+                        crit: clone.critical_chance || 0,
+                        critdmg: clone.critical_damage || 0,
+                        dual: clone.dual_shot || 0
+                    }));
+                }
+
+                // Update current mob and level
+                if (data.actions) {
+                    if (data.actions.currentNpc) {
+                        form.mob_name.value = data.actions.currentNpc.charAt(0).toUpperCase() + data.actions.currentNpc.slice(1);
+                    }
+                    if (data.actions.currentNpcLevel) {
+                        form.mob_level.value = data.actions.currentNpcLevel;
+                    }
+                }
+
+                // Handle spacestation incomeboost
+                if (data.spacestation && data.spacestation.incomeboost) {
+                    form.income_boost.value = data.spacestation.incomeboost;
+                } else {
+                    form.income_boost.value = 0;
+                }
+
+                // Handle reputation
+                if (data.reputation !== null && data.reputation !== undefined) {
+                    form.reputation.value = (data.reputation * 0.2).toFixed(1);
+                } else {
+                    form.reputation.value = 0;
+                }
+
+                // Render clone modifiers with the new data
+                renderCloneModifiers(parseInt(form.n_clones.value) || 1);
                 
                 const nClonesInput = document.getElementById('n_clones');
                 nClonesInput.dispatchEvent(new Event('input'));
@@ -1045,7 +1082,7 @@
                 <div id="cloneModifiersSection" class="clone-modifiers-section"></div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 7.5em;">
-                <!-- <div class="api-block" style="margin-top: 0; margin-left: 5px; min-height: 110px; max-height: 110px; width: 450px; min-width: 450px; max-width: 450px; background: #23283a; border-radius: 6px; border: 1px solid #2c3242; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box;">
+                <div class="api-block" style="margin-top: 0; margin-left: 5px; min-height: 110px; max-height: 110px; width: 450px; min-width: 450px; max-width: 450px; background: #23283a; border-radius: 6px; border: 1px solid #2c3242; padding: 0.7em 1.2em 0.5em 1.2em; box-sizing: border-box;">
                     <div class="block-label">Import data
                         <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Import your player, mob and clone stats using your API key. This will automatically fill in all your current stats. Your API key is located in Settings">ⓘ</span>
                     </div>
@@ -1058,8 +1095,8 @@
                             <button id="importBtn" type="button">Import</button>
                         </div>
                     </div>
-                </div> -->
-                <div class="battle-block" style="margin-top: 0.0em; margin-left: 5px; min-height: 210px; max-height: 210px;width: 350px; min-width: 350px; max-width: 350px">
+                </div>
+                <div class="battle-block" style="margin-top: 1.0em; margin-left: 5px; min-height: 210px; max-height: 210px;width: 350px; min-width: 350px; max-width: 350px">
                     <div class="block-label">Battle Simulation
                         <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Run a battle simulation with the current configuration. The simulation will execute the specified number of battles (up to 1,000,000) to calculate win probability and resource gains.">ⓘ</span>
                     </div>
@@ -1076,7 +1113,7 @@
                 <div class="optimizer-block" style="margin-top: 1.5em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px;">
                     <div class="block-label">Optimizer
                         <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Find the optimal stat distribution for your current configuration. The optimizer will test various stat combinations using the specified number of simulations (up to 1,000,000). Higher values provide more accurate results but significantly increase computation time and may temporarily freeze the interface. Consider starting with a lower number and increasing it if needed.">ⓘ</span>
-                        <span style="color: #ff4f4f; margin-left: 10px; font-size: 0.85em; font-weight: normal;">Optimizer is currently unreliable for mob levels > 100. Use with caution.</span>
+                        <span style="color: #ff4f4f; margin-left: 10px; font-size: 0.85em; font-weight: normal;">Optimizer is currently unreliable for mob levels > 150. Use with caution.</span>
                     </div>
                     <div class="form-row">
                         <div class="form-group">

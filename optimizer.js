@@ -47,7 +47,7 @@ class Optimizer {
         }
         else {
             hits_to_die = 4;
-            hits_to_kill = 6;
+            hits_to_kill = 8;
         }
 
         const total_hp_to_have = (hits_to_die - 1) * this.mob.dmg + 1;
