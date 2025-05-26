@@ -359,6 +359,10 @@
                     dodge_percentage: document.getElementById('dodge_percentage').value,
                     rare_drop_increase: document.getElementById('rare_drop_increase').value,
                     maneuverability: document.getElementById('maneuverability').value,
+                    // Optimizer settings
+                    optimizer_target: document.querySelector('input[name="optimize_target"]:checked').value,
+                    optimizer_htk: document.getElementById('optimizer_htk').value,
+                    optimizer_htd: document.getElementById('optimizer_htd').value,
                     // API key
                     api_key: form.api_key?.value || ''
                 };
@@ -372,6 +376,9 @@
                 Object.entries(settings).forEach(([key, value]) => {
                     if (key === 'clone_modifiers') {
                         cloneModifiers = value;
+                    } else if (key === 'optimizer_target') {
+                        const radio = document.querySelector(`input[name="optimize_target"][value="${value}"]`);
+                        if (radio) radio.checked = true;
                     } else {
                         const el = document.getElementById(key);
                         if (!el) return;
@@ -506,7 +513,7 @@
                     
                     // Define step values for different fields
                     let step = 10; // default step
-                    if (['n_clones', 'number_of_drones'].includes(targetId)) {
+                    if (['n_clones', 'number_of_drones', 'optimizer_htk', 'optimizer_htd'].includes(targetId)) {
                         step = 1;
                     } else if (['precision', 'hull', 'power', 'evasion'].includes(targetId)) {
                         step = 5;
@@ -533,7 +540,7 @@
                     
                     // Define step values for different fields
                     let step = 10; // default step
-                    if (['n_clones', 'number_of_drones'].includes(targetId)) {
+                    if (['n_clones', 'number_of_drones', 'optimizer_htk', 'optimizer_htd'].includes(targetId)) {
                         step = 1;
                     } else if (['precision', 'hull', 'power', 'evasion'].includes(targetId)) {
                         step = 5;
@@ -623,8 +630,16 @@
 
             // Optimizer logic
             const optimizerBtn = document.getElementById('optimizerBtn');
+            const longOptimizerBtn = document.getElementById('longOptimizerBtn');
             const optimizerResultDiv = document.getElementById('optimizerResult');
-            optimizerBtn.addEventListener('click', () => {
+            
+            async function runOptimizer(isLongOptimize = false) {
+                // Reset progress bar
+                const progressBar = document.getElementById('optimizerProgressBar');
+                const progressText = document.getElementById('optimizerProgressText');
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+
                 // Gather player fields
                 const power = parseInt(form.power.value) || 0;
                 const precision = parseInt(form.precision.value) || 0;
@@ -662,10 +677,84 @@
 
                 const optimizerFightsInput = document.getElementById('optimizer_n_fights');
                 const n_fights = parseInt(optimizerFightsInput.value);
-                const optimizer = new Optimizer(player, mob, list_modifiers, n_fights);
+                const reputation = parseFloat(form.reputation?.value || 0) / 100;
+                const optimizer = new Optimizer(player, mob, list_modifiers, n_fights, reputation);
                 let result;
-                result = optimizer.optimize();
                 
+                if (isLongOptimize) {
+                    const target = document.querySelector('input[name="optimize_target"]:checked').value;
+                    const range_htk = Array.from({length: 7}, (_, i) => i + 4); // range(4,11)
+                    const range_htd = Array.from({length: 4}, (_, i) => i + 3); // range(3,7)
+                    const totalIterations = range_htk.length * range_htd.length;
+                    let currentIteration = 0;
+
+                    let best_build = [0, 0, 0, 0];
+                    let best_res = 0;
+                    let best_htk = 0;
+                    let best_htd = 0;
+                    let best_win_chance = 0;
+
+                    for (const htk of range_htk) {
+                        for (const htd of range_htd) {
+                            const [build, res, win_chance] = optimizer.findBestBuild(htd, htk, target);
+                            if (res > best_res) {
+                                best_res = res;
+                                best_build = build;
+                                best_htk = htk;
+                                best_htd = htd;
+                                best_win_chance = win_chance;
+                            }
+
+                            // Update progress
+                            currentIteration++;
+                            const progress = (currentIteration / totalIterations) * 100;
+                            progressBar.style.width = `${progress}%`;
+                            progressText.textContent = `${Math.round(progress)}%`;
+                            
+                            // Allow UI to update
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                        }
+                    }
+
+                    result = { bestStats: best_build, winChance: best_win_chance };
+                    
+                    // Update HTK and HTD fields with the optimal values
+                    document.getElementById('optimizer_htk').value = best_htk;
+                    document.getElementById('optimizer_htd').value = best_htd;
+                    
+                    // Save the new values to localStorage
+                    const settings = JSON.parse(localStorage.getItem('stellarOdysseySettings') || '{}');
+                    settings.optimizer_htk = best_htk;
+                    settings.optimizer_htd = best_htd;
+                    localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
+                } else {
+                    const target = document.querySelector('input[name="optimize_target"]:checked').value;
+                    const htk = parseInt(document.getElementById('optimizer_htk').value);
+                    const htd = parseInt(document.getElementById('optimizer_htd').value);
+                    
+                    // Simple smooth progress over exactly 1 second
+                    const startTime = Date.now();
+                    const duration = 1000; // 1 second
+                    
+                    const animateProgress = () => {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration * 100, 100);
+                        
+                        progressBar.style.width = `${progress}%`;
+                        progressText.textContent = `${Math.round(progress)}%`;
+                        
+                        if (progress < 100) {
+                            requestAnimationFrame(animateProgress);
+                        }
+                    };
+                    
+                    requestAnimationFrame(animateProgress);
+
+                    const [bestBuild, bestRes, bestWinChance] = optimizer.findBestBuild(htd, htk, target, false);
+                    result = { bestStats: bestBuild, winChance: bestWinChance };
+                }
+
+                // Update the results display
                 if (result && result.bestStats && result.winChance !== undefined) {
                     const [power, precision, evasion, hull] = result.bestStats;
                     const tmp_player = new Player({
@@ -737,7 +826,10 @@
                     let importBtn = document.getElementById('importOptimizedBtn');
                     if (importBtn) importBtn.style.display = 'none';
                 }
-            });
+            }
+
+            optimizerBtn.addEventListener('click', () => runOptimizer(false));
+            longOptimizerBtn.addEventListener('click', () => runOptimizer(true));
 
             // Add event listeners to save settings when values change
             form.querySelectorAll('input, select').forEach(element => {
@@ -1164,20 +1256,57 @@
                             </div>
                         </div>
                     </div>
-                    <div class="optimizer-block" style="margin-top: 1.5em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px;">
+                    <div class="optimizer-block" style="margin-top: 1.5em; margin-left: 5px; width: 600px; min-width: 600px; max-width: 600px; min-height: 210px;">
                         <div class="block-label">Optimizer
                             <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Find the optimal stat distribution for your current configuration. The optimizer will test various stat combinations using the specified number of simulations (up to 1,000,000). Higher values provide more accurate results but significantly increase computation time and may temporarily freeze the interface. Consider starting with a lower number and increasing it if needed.">ⓘ</span>
-                            <span style="color: #ff4f4f; margin-left: 10px; font-size: 0.85em; font-weight: normal;">Optimizer is currently unreliable for mob levels > ~140. Use with caution.</span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1em;">
+                            <span style="margin-right: 10px;">Optimize against:</span>
+                            <label style="margin-right: 15px; display: flex; align-items: center;">
+                                <input type="radio" name="optimize_target" value="credits" checked style="margin-right: 5px;"> Credits
+                            </label>
+                            <label style="display: flex; align-items: center;">
+                                <input type="radio" name="optimize_target" value="exp" style="margin-right: 5px;"> Experience
+                            </label>
+                        </div>
+                        <div class="form-row" style="margin-bottom: 1em;">
+                            <div class="form-group">
+                                <label for="optimizer_htk">HTK:
+                                    <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Hits to kill: The number of hits needed to defeat the mob">ⓘ</span>
+                                </label>
+                                <div class="input-group">
+                                    <button type="button" class="minus-btn" data-target="optimizer_htk">-</button>
+                                    <input type="number" id="optimizer_htk" name="optimizer_htk" value="8" min="1" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                                    <button type="button" class="plus-btn" data-target="optimizer_htk">+</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="optimizer_htd">HTD:
+                                    <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Hits to die: The number of hits the mob needs to defeat your clones">ⓘ</span>
+                                </label>
+                                <div class="input-group">
+                                    <button type="button" class="minus-btn" data-target="optimizer_htd">-</button>
+                                    <input type="number" id="optimizer_htd" name="optimizer_htd" value="4" min="1" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                                    <button type="button" class="plus-btn" data-target="optimizer_htd">+</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="optimizer_n_fights">Number of fights:</label>
                                 <input type="number" id="optimizer_n_fights" name="optimizer_n_fights" value="5000" min="1" max="1000000" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
                             </div>
-                            <div class="form-group" style="align-items: flex-start; justify-content: flex-start; margin-left: -130px; display: flex; flex-direction: row; align-items: center;">
-                                <button id="optimizerBtn" type="button">Optimize</button>
-                                <button id="importOptimizedBtn" type="button" style="display: none; margin-left: 20px;">Import</button>
+                            <div class="form-group" style="display: flex; flex-direction: row; align-items: center; margin-left: -250px;">
+                                <button id="optimizerBtn" type="button" style="margin-right: 10px;">Simple Optimize</button>
+                                <button id="longOptimizerBtn" type="button" style="margin-right: 10px;" title="Optimize by searching through multiple values of HTK and HTD. It is not advised to use more than 5000 fights">Long Optimize</button>
+                                <button id="importOptimizedBtn" type="button" style="display: none;">Import</button>
                             </div>
+                        </div>
+                        <div id="optimizerProgress" style="height: 50px; margin: 1em 0;">
+                            <div style="width: 100%; background: #36405a; border-radius: 4px; height: 20px; overflow: hidden;">
+                                <div id="optimizerProgressBar" style="width: 0%; height: 100%; background: #4fa3ff; transition: width 0.3s ease;"></div>
+                            </div>
+                            <div id="optimizerProgressText" style="text-align: center; margin-top: 0.5em; font-size: 0.9em; color: #b0b6c6;">0%</div>
                         </div>
                         <div id="optimizerResult" style="display: flex; flex-direction: row; gap: 2em; margin-top: 1em;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2em 1.2em; width: 140px; font-size: 1em;">
@@ -1348,7 +1477,7 @@
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
             const dateStr = "2025-05-26";
-            const timeStr = "09:17";
+            const timeStr = "20:15";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>
