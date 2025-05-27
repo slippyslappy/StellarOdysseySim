@@ -357,8 +357,16 @@ class UniverseMap {
 
 // Initialize the map when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const universeMap = new UniverseMap('universeMap');
-    
+    let universeMap = null;
+
+    // Function to initialize the map
+    function initializeMap() {
+        if (!universeMap) {
+            universeMap = new UniverseMap('universeMap');
+        }
+        universeMap.draw();
+    }
+
     // Add button to load systems
     const loadButton = document.getElementById('loadSystemsBtn');
     const apiKeyInput = document.getElementById('systems_api_key');
@@ -407,5 +415,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadButton.textContent = 'Load Systems';
             }
         });
+    }
+
+    // Add event listener for tab switching
+    const universeMapTab = document.querySelector('.tab[data-tab="universe-map-tab"]');
+    if (universeMapTab) {
+        universeMapTab.addEventListener('click', () => {
+            // Initialize and draw the map when switching to the universe map tab
+            initializeMap();
+        });
+    }
+
+    // Initialize the map immediately if we're on the universe map tab
+    if (document.getElementById('universe-map-tab').classList.contains('active')) {
+        initializeMap();
     }
 }); 
