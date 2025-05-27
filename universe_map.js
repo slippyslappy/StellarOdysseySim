@@ -76,6 +76,7 @@ class UniverseMap {
         this.playerPosition = null;
         this.pulseAnimation = null;
         this.pulsePhase = 0;
+        this.ripples = [];
 
         // Set canvas size
         this.resizeCanvas();
@@ -107,12 +108,35 @@ class UniverseMap {
         if (this.pulseAnimation) {
             cancelAnimationFrame(this.pulseAnimation);
         }
+        this.ripples = [];
         this.startPulseAnimation();
     }
 
     startPulseAnimation() {
         const animate = () => {
-            this.pulsePhase = (this.pulsePhase + 0.05) % (Math.PI * 2);
+            // Add new ripple every 0.3 seconds (was 0.2)
+            if (this.pulsePhase % (Math.PI * 2) < 0.1) {
+                this.ripples.push({
+                    size: 5, // Start with a small circle
+                    opacity: 1,
+                    startTime: Date.now()
+                });
+            }
+            this.pulsePhase = (this.pulsePhase + 0.05) % (Math.PI * 2); // Slower phase change for less frequent ripples
+
+            // Update existing ripples
+            const currentTime = Date.now();
+            this.ripples = this.ripples.filter(ripple => {
+                const age = currentTime - ripple.startTime;
+                const progress = age / 750; // 750ms = 0.75 seconds for full animation (was 500ms)
+                
+                if (progress >= 1) return false; // Remove after 0.75 seconds
+                
+                ripple.size = 5 + (progress * 25); // Expand from 5 to 30
+                ripple.opacity = 1 - progress; // Fade out linearly
+                return true;
+            });
+
             this.draw();
             this.pulseAnimation = requestAnimationFrame(animate);
         };
@@ -239,29 +263,14 @@ class UniverseMap {
             if (x >= padding.left && x <= width - padding.right &&
                 y >= padding.top && y <= height - padding.bottom) {
                 
-                // Draw pulsating circles
-                const pulseSize = 15 + Math.sin(this.pulsePhase) * 5;
-                const pulseOpacity = 0.5 + Math.sin(this.pulsePhase) * 0.3;
-
-                // Outer circle
-                ctx.beginPath();
-                ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Inner circle
-                ctx.beginPath();
-                ctx.arc(x, y, pulseSize * 0.6, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Center dot
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = 'white';
-                ctx.fill();
+                // Draw expanding ripples
+                this.ripples.forEach(ripple => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, ripple.size, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${ripple.opacity})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
             }
         }
 
