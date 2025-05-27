@@ -394,9 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadButton.disabled = true;
                 loadButton.textContent = 'Loading...';
 
-                const response = await fetch(`https://api.stellarodyssey.app/api/public/systems?apikey=${apiKey}`, {
+                const response = await fetch('https://api.stellarodyssey.app/api/public/systems', {
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'sodyssey-api-key': apiKey
                     }
                 });
 

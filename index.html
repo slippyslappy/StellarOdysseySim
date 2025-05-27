@@ -884,15 +884,15 @@
                 try {
                     const response = await axios({
                         method: 'get',
-                        url: `https://api.stellarodyssey.app/api/public/user?apikey=${apiKey}`,
+                        url: 'https://api.stellarodyssey.app/api/public/user',
                         headers: {
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'sodyssey-api-key': apiKey
                         },
                         timeout: 5000
                     });
                     return response.data;
                 } catch (error) {
-
                     let errorMessage = 'Failed to fetch user data. ';
                     
                     if (error.response) {
