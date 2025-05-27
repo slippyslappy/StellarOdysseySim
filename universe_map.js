@@ -77,6 +77,36 @@ class UniverseMap {
         this.pulseAnimation = null;
         this.pulsePhase = 0;
         this.ripples = [];
+        
+        // Load checkbox states from localStorage
+        this.showPublicSystems = localStorage.getItem('showPublicSystems') === 'true';
+        this.showCurrentPosition = localStorage.getItem('showCurrentPosition') === 'true';
+        
+        // Set initial checkbox states
+        document.getElementById('show_public_systems').checked = this.showPublicSystems;
+        document.getElementById('show_current_position').checked = this.showCurrentPosition;
+        
+        // Add checkbox event listeners
+        document.getElementById('show_public_systems').addEventListener('change', (e) => {
+            this.showPublicSystems = e.target.checked;
+            localStorage.setItem('showPublicSystems', this.showPublicSystems);
+            this.draw();
+        });
+        
+        document.getElementById('show_current_position').addEventListener('change', (e) => {
+            this.showCurrentPosition = e.target.checked;
+            localStorage.setItem('showCurrentPosition', this.showCurrentPosition);
+            if (this.showCurrentPosition && this.playerPosition) {
+                this.startPulseAnimation();
+            } else {
+                if (this.pulseAnimation) {
+                    cancelAnimationFrame(this.pulseAnimation);
+                    this.pulseAnimation = null;
+                }
+                this.ripples = [];
+                this.draw();
+            }
+        });
 
         // Set canvas size
         this.resizeCanvas();
@@ -251,11 +281,8 @@ class UniverseMap {
             ctx.fillText(i.toString(), width - padding.right + 10, y + 4);
         }
 
-        // Reset text alignment for system names
-        ctx.textAlign = 'center';
-
-        // Draw player position if available
-        if (this.playerPosition) {
+        // Draw player position if available and showCurrentPosition is true
+        if (this.showCurrentPosition && this.playerPosition) {
             const x = toPixelX(this.playerPosition.coordinate_x);
             const y = toPixelY(this.playerPosition.coordinate_y);
 
@@ -274,31 +301,33 @@ class UniverseMap {
             }
         }
 
-        // Draw systems
-        this.systems.forEach((system, index) => {
-            const x = toPixelX(system.coordinate_x);
-            const y = toPixelY(system.coordinate_y);
+        // Draw systems if showPublicSystems is true
+        if (this.showPublicSystems) {
+            this.systems.forEach((system, index) => {
+                const x = toPixelX(system.coordinate_x);
+                const y = toPixelY(system.coordinate_y);
 
-            // Only draw systems that are within the visible area and graph boundaries
-            if (x >= padding.left && x <= width - padding.right &&
-                y >= padding.top && y <= height - padding.bottom) {
-                
-                // Set color based on whether it's a starter system (first 9) or not
-                ctx.fillStyle = index < 9 ? '#4CAF50' : '#FF5252';
-                
-                // Draw system point as a square (2x2 pixels)
-                const size = this.hoveredSystem === system ? 7 : 5;
-                ctx.fillRect(x - size/2, y - size/2, size, size);
+                // Only draw systems that are within the visible area and graph boundaries
+                if (x >= padding.left && x <= width - padding.right &&
+                    y >= padding.top && y <= height - padding.bottom) {
+                    
+                    // Set color based on whether it's a starter system (first 9) or not
+                    ctx.fillStyle = index < 9 ? '#4CAF50' : '#FF5252';
+                    
+                    // Draw system point as a square (2x2 pixels)
+                    const size = this.hoveredSystem === system ? 7 : 5;
+                    ctx.fillRect(x - size/2, y - size/2, size, size);
 
-                // Draw system name if hovered
-                if (this.hoveredSystem === system) {
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#e6eaf3';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(system.name, x, y - 10);
+                    // Draw system name if hovered
+                    if (this.hoveredSystem === system) {
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = '#e6eaf3';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(system.name, x, y - 10);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     handleMouseMove(e) {
