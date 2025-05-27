@@ -1,3 +1,6 @@
+2025-05-27 09:30
+- Introduced interactive zoomable and draggable map of the publicly discovered universe
+
 2025-05-26 20:15
 - Optimizer has been reworked once again. Should work for everybody now. If you have troubles obtaining good results, reach out to me. Dragon is not yet included in total credits and exeprience. 
 
