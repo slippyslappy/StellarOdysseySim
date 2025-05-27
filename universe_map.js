@@ -73,6 +73,9 @@ class UniverseMap {
         this.zoomLevel = 1;
         this.zoomCenterX = 0;
         this.zoomCenterY = 0;
+        this.playerPosition = null;
+        this.pulseAnimation = null;
+        this.pulsePhase = 0;
 
         // Set canvas size
         this.resizeCanvas();
@@ -97,6 +100,23 @@ class UniverseMap {
     loadSystems(data) {
         this.systems = data.systems;
         this.draw();
+    }
+
+    setPlayerPosition(position) {
+        this.playerPosition = position;
+        if (this.pulseAnimation) {
+            cancelAnimationFrame(this.pulseAnimation);
+        }
+        this.startPulseAnimation();
+    }
+
+    startPulseAnimation() {
+        const animate = () => {
+            this.pulsePhase = (this.pulsePhase + 0.05) % (Math.PI * 2);
+            this.draw();
+            this.pulseAnimation = requestAnimationFrame(animate);
+        };
+        this.pulseAnimation = requestAnimationFrame(animate);
     }
 
     draw() {
@@ -209,6 +229,41 @@ class UniverseMap {
 
         // Reset text alignment for system names
         ctx.textAlign = 'center';
+
+        // Draw player position if available
+        if (this.playerPosition) {
+            const x = toPixelX(this.playerPosition.coordinate_x);
+            const y = toPixelY(this.playerPosition.coordinate_y);
+
+            // Only draw if within visible area and graph boundaries
+            if (x >= padding.left && x <= width - padding.right &&
+                y >= padding.top && y <= height - padding.bottom) {
+                
+                // Draw pulsating circles
+                const pulseSize = 15 + Math.sin(this.pulsePhase) * 5;
+                const pulseOpacity = 0.5 + Math.sin(this.pulsePhase) * 0.3;
+
+                // Outer circle
+                ctx.beginPath();
+                ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Inner circle
+                ctx.beginPath();
+                ctx.arc(x, y, pulseSize * 0.6, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseOpacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Center dot
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            }
+        }
 
         // Draw systems
         this.systems.forEach((system, index) => {
@@ -394,24 +449,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadButton.disabled = true;
                 loadButton.textContent = 'Loading...';
 
-                const response = await fetch('https://api.stellarodyssey.app/api/public/systems', {
+                // Load systems
+                const systemsResponse = await fetch('https://api.stellarodyssey.app/api/public/systems', {
                     headers: {
                         'Accept': 'application/json',
                         'sodyssey-api-key': apiKey
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Server responded with status ${response.status}`);
+                if (!systemsResponse.ok) {
+                    throw new Error(`Server responded with status ${systemsResponse.status}`);
                 }
 
-                const data = await response.json();
-                universeMap.loadSystems(data);
+                const systemsData = await systemsResponse.json();
+                universeMap.loadSystems(systemsData);
+
+                // Add a 1 second delay between requests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Load journal
+                const journalResponse = await fetch('https://api.stellarodyssey.app/api/public/journal', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'sodyssey-api-key': apiKey
+                    }
+                });
+
+                if (!journalResponse.ok) {
+                    throw new Error(`Server responded with status ${journalResponse.status}`);
+                }
+
+                const journalData = await journalResponse.json();
+                if (journalData.fullJournal && journalData.fullJournal.length > 0) {
+                    universeMap.setPlayerPosition(journalData.fullJournal[0]);
+                }
                 
                 loadButton.disabled = false;
                 loadButton.textContent = 'Load Systems';
             } catch (error) {
-                alert('Failed to load systems: ' + error.message);
+                alert('Failed to load data: ' + error.message);
                 loadButton.disabled = false;
                 loadButton.textContent = 'Load Systems';
             }
