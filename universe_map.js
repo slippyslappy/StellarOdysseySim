@@ -1,63 +1,3 @@
-// Sample data for testing
-const sampleData = {
-    "systems": [
-        {
-            "coordinate_x": 250,
-            "coordinate_y": 1750,
-            "name": "Aldebaran",
-            "_id": "680d553f4f2c6ad94aea1775"
-        },
-        {
-            "coordinate_x": 250,
-            "coordinate_y": 1000,
-            "name": "Sirius",
-            "_id": "680d553f4f2c6ad94aea177a"
-        },
-        {
-            "coordinate_x": 250,
-            "coordinate_y": 250,
-            "name": "Therion",
-            "_id": "680d553f4f2c6ad94aea177e"
-        },
-        {
-            "coordinate_x": 1000,
-            "coordinate_y": 1750,
-            "name": "Nyxar",
-            "_id": "680d553f4f2c6ad94aea1783"
-        },
-        {
-            "coordinate_x": 1000,
-            "coordinate_y": 1000,
-            "name": "Sun",
-            "_id": "680d553f4f2c6ad94aea1788"
-        },
-        {
-            "coordinate_x": 1000,
-            "coordinate_y": 250,
-            "name": "Vega",
-            "_id": "680d553f4f2c6ad94aea178d"
-        },
-        {
-            "coordinate_x": 1750,
-            "coordinate_y": 1750,
-            "name": "Antares",
-            "_id": "680d553f4f2c6ad94aea1791"
-        },
-        {
-            "coordinate_x": 1750,
-            "coordinate_y": 1000,
-            "name": "Rigel",
-            "_id": "680d553f4f2c6ad94aea1795"
-        },
-        {
-            "coordinate_x": 1750,
-            "coordinate_y": 250,
-            "name": "Polaris",
-            "_id": "680d553f4f2c6ad94aea1799"
-        }
-    ]
-};
-
 class UniverseMap {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
@@ -130,6 +70,11 @@ class UniverseMap {
 
     loadSystems(data) {
         this.systems = data.systems;
+        // Update the systems count text
+        const systemsCountElement = document.getElementById('systemsCount');
+        if (systemsCountElement) {
+            systemsCountElement.textContent = `There are currently ${this.systems.length} publicly discovered systems`;
+        }
         this.draw();
     }
 

@@ -1418,7 +1418,7 @@
 
     <div id="universe-map-tab" class="tab-content">
         <div style="display: flex; flex-direction: row; padding: 2em; gap: 2em; min-height: calc(100vh);">
-            <div style="display: flex; flex-direction: column; gap: 1em; min-width: 300px; margin-top: 50vh; transform: translateY(-50%);">
+            <div style="display: flex; flex-direction: column; gap: 1em; min-width: 400px; max-width: 400px; margin-top: 50vh; transform: translateY(-50%);">
                 <div style="background: #23283a; border-radius: 6px; border: 1px solid #2c3242; padding: 1.2em; box-sizing: border-box;">
                     <div style="font-size: 1.22em; font-weight: 700; margin-bottom: 1em; color: #f3f6fa; letter-spacing: 0.01em;">Discovered Universe</div>
                     <div style="display: flex; flex-direction: column; gap: 1em;">
@@ -1426,6 +1426,7 @@
                             <label for="systems_api_key" style="display: block; margin-bottom: 0.5em; color: #e6eaf3;">API Key:</label>
                             <input type="text" id="systems_api_key" style="width: 100%; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; padding: 0.5em; border-radius: 4px; box-sizing: border-box;">
                         </div>
+                        <div style="color: #e6eaf3; font-size: 0.9em; margin-bottom: 1.5em;" id="systemsCount">There are currently 0 publicly discovered systems</div>
                         <div style="display: flex; flex-direction: column; gap: 0.5em;">
                             <label style="display: flex; align-items: center; gap: 0.5em; color: #e6eaf3; cursor: pointer;">
                                 <input type="checkbox" id="show_public_systems" style="margin: 0;">
