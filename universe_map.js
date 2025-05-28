@@ -17,14 +17,18 @@ class UniverseMap {
         this.pulseAnimation = null;
         this.pulsePhase = 0;
         this.ripples = [];
+        this.journalData = null;
+        this.hoveredJourneyPoint = null;
         
         // Load checkbox states from localStorage
         this.showPublicSystems = localStorage.getItem('showPublicSystems') === 'true';
         this.showCurrentPosition = localStorage.getItem('showCurrentPosition') === 'true';
+        this.showPlayerJourney = localStorage.getItem('showPlayerJourney') === 'true';
         
         // Set initial checkbox states
         document.getElementById('show_public_systems').checked = this.showPublicSystems;
         document.getElementById('show_current_position').checked = this.showCurrentPosition;
+        document.getElementById('show_player_journey').checked = this.showPlayerJourney;
         
         // Add checkbox event listeners
         document.getElementById('show_public_systems').addEventListener('change', (e) => {
@@ -48,6 +52,12 @@ class UniverseMap {
             }
         });
 
+        document.getElementById('show_player_journey').addEventListener('change', (e) => {
+            this.showPlayerJourney = e.target.checked;
+            localStorage.setItem('showPlayerJourney', this.showPlayerJourney);
+            this.draw();
+        });
+
         // Set canvas size
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -62,9 +72,21 @@ class UniverseMap {
     resizeCanvas() {
         // Make canvas responsive while maintaining aspect ratio
         const container = this.canvas.parentElement;
-        const size = Math.min(container.clientWidth, container.clientHeight);
-        this.canvas.width = size;
-        this.canvas.height = size;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // Use the height as base and make width 15% larger
+        const height = Math.min(containerWidth / 1.18, containerHeight) * 1.18;
+        const width = height * 1.18;
+        
+        // Set width and height
+        this.canvas.width = width;
+        this.canvas.height = height;
+        
+        // Ensure the canvas maintains its shape
+        this.canvas.style.width = `${width}px`;
+        this.canvas.style.height = `${height}px`;
+        
         this.draw();
     }
 
@@ -85,6 +107,34 @@ class UniverseMap {
         }
         this.ripples = [];
         this.startPulseAnimation();
+    }
+
+    setJournalData(journalData) {
+        this.journalData = journalData;
+        // Calculate and display total distance traveled
+        const distanceElement = document.getElementById('totalDistance');
+        if (distanceElement && this.journalData && this.journalData.fullJournal.length > 0) {
+            let totalDistance = 0;
+            const journal = this.journalData.fullJournal;
+            
+            // Calculate distance between consecutive non-starter systems
+            for (let i = 1; i < journal.length; i++) {
+                const prev = journal[i-1];
+                const curr = journal[i];
+                
+                // Only add distance if neither system is a starter
+                if (!prev.starter && !curr.starter) {
+                    const dx = curr.coordinate_x - prev.coordinate_x;
+                    const dy = curr.coordinate_y - prev.coordinate_y;
+                    totalDistance += 10 * Math.sqrt(dx * dx + dy * dy);
+                }
+            }
+            
+            distanceElement.textContent = `You currently have travelled ${totalDistance.toFixed(2)} ly`;
+        } else if (distanceElement) {
+            distanceElement.textContent = 'You currently have travelled 0 ly';
+        }
+        this.draw();
     }
 
     startPulseAnimation() {
@@ -118,13 +168,33 @@ class UniverseMap {
         this.pulseAnimation = requestAnimationFrame(animate);
     }
 
+    // Helper function to get color based on date
+    getColorFromDate(date) {
+        if (!date) return '#FF5252';
+        
+        // Convert date string to timestamp
+        const timestamp = new Date(date).getTime();
+        
+        // Get min and max timestamps from journal data
+        const timestamps = this.journalData.fullJournal.map(entry => new Date(entry.date).getTime());
+        const minTimestamp = Math.min(...timestamps);
+        const maxTimestamp = Math.max(...timestamps);
+        
+        // Normalize timestamp to 0-1 range
+        const normalized = (timestamp - minTimestamp) / (maxTimestamp - minTimestamp);
+        
+        // Use a color gradient from blue (old) to red (new)
+        const hue = (1 - normalized) * 240; // 240 (blue) to 0 (red)
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+
     draw() {
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;
         const padding = {
             left: 40,
-            right: 40,
+            right: 140,
             top: 25,
             bottom: 25
         };
@@ -226,6 +296,62 @@ class UniverseMap {
             ctx.fillText(i.toString(), width - padding.right + 10, y + 4);
         }
 
+        // Draw colorbar if showing journey
+        if (this.showPlayerJourney && this.journalData && this.journalData.fullJournal.length > 0) {
+            const colorbarWidth = 20;
+            const colorbarHeight = graphHeight;
+            const colorbarX = width - padding.right + 50;
+            const colorbarY = padding.top;
+
+            // Draw colorbar background
+            ctx.fillStyle = '#23283a';
+            ctx.fillRect(colorbarX - 5, colorbarY - 5, colorbarWidth + 10, colorbarHeight + 10);
+
+            // Create gradient with multiple color stops to match the HSL interpolation
+            const gradient = ctx.createLinearGradient(0, colorbarY + colorbarHeight, 0, colorbarY);
+            gradient.addColorStop(0, 'hsl(240, 100%, 50%)');    // Blue (old)
+            gradient.addColorStop(0.5, 'hsl(120, 100%, 50%)');  // Green (middle)
+            gradient.addColorStop(1, 'hsl(0, 100%, 50%)');      // Red (new)
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(colorbarX, colorbarY, colorbarWidth, colorbarHeight);
+
+            // Get min and max dates
+            const dates = this.journalData.fullJournal.map(entry => new Date(entry.date));
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            
+            // Format dates
+            const formatDate = (date) => {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            };
+
+            // Draw ticks and labels (oldest at bottom, newest at top)
+            const numTicks = 5;
+            ctx.fillStyle = '#e6eaf3';
+            ctx.textAlign = 'left';
+            ctx.font = '10px Arial';
+            
+            for (let i = 0; i <= numTicks; i++) {
+                const y = colorbarY + (colorbarHeight * i / numTicks);
+                const date = new Date(minDate.getTime() + (maxDate.getTime() - minDate.getTime()) * (1 - i / numTicks));
+                
+                // Draw tick line
+                ctx.beginPath();
+                ctx.moveTo(colorbarX + colorbarWidth + 2, y);
+                ctx.lineTo(colorbarX + colorbarWidth + 5, y);
+                ctx.strokeStyle = '#e6eaf3';
+                ctx.stroke();
+                
+                // Draw date label
+                ctx.fillText(formatDate(date), colorbarX + colorbarWidth + 8, y + 3);
+            }
+        }
+
         // Draw player position if available and showCurrentPosition is true
         if (this.showCurrentPosition && this.playerPosition) {
             const x = toPixelX(this.playerPosition.coordinate_x);
@@ -273,6 +399,64 @@ class UniverseMap {
                 }
             });
         }
+
+        // Draw player journey if enabled (moved to the end to ensure it's drawn on top)
+        if (this.showPlayerJourney && this.journalData && this.journalData.fullJournal.length > 0) {
+            // Create a map to store the latest visit date for each system
+            const systemVisits = new Map();
+            this.journalData.fullJournal.forEach(entry => {
+                systemVisits.set(entry.coordinate_x + ',' + entry.coordinate_y, entry.date);
+            });
+
+            // Draw journey points
+            systemVisits.forEach((date, coords) => {
+                const [x, y] = coords.split(',').map(Number);
+                const pixelX = toPixelX(x);
+                const pixelY = toPixelY(y);
+
+                // Only draw if within visible area and graph boundaries
+                if (pixelX >= padding.left && pixelX <= width - padding.right &&
+                    pixelY >= padding.top && pixelY <= height - padding.bottom) {
+                    
+                    // Draw journey point
+                    ctx.fillStyle = this.getColorFromDate(date);
+                    const isHovered = this.hoveredJourneyPoint && 
+                                    this.hoveredJourneyPoint.x === x && 
+                                    this.hoveredJourneyPoint.y === y;
+                    const size = isHovered ? 7 : 4;
+                    ctx.beginPath();
+                    ctx.arc(pixelX, pixelY, size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Draw tooltip for hovered point
+                    if (isHovered) {
+                        const visitDate = new Date(date);
+                        const formattedDate = visitDate.toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+
+                        // Draw tooltip background
+                        ctx.font = '12px Arial';
+                        const textWidth = ctx.measureText(formattedDate).width;
+                        const tooltipX = pixelX + 10;
+                        const tooltipY = pixelY - 10;
+                        
+                        ctx.fillStyle = 'rgba(35, 40, 58, 0.9)';
+                        ctx.fillRect(tooltipX - 5, tooltipY - 20, textWidth + 10, 25);
+                        
+                        // Draw tooltip text
+                        ctx.fillStyle = '#e6eaf3';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(formattedDate, tooltipX, tooltipY);
+                    }
+                }
+            });
+        }
     }
 
     handleMouseMove(e) {
@@ -281,7 +465,7 @@ class UniverseMap {
         const y = e.clientY - rect.top;
         const padding = {
             left: 40,
-            right: 40,
+            right: 140,
             top: 25,
             bottom: 25
         };
@@ -308,23 +492,52 @@ class UniverseMap {
             return;
         }
 
-        // Check if mouse is over any system
-        let found = false;
+        // Check if mouse is over any journey point first
+        if (this.showPlayerJourney && this.journalData && this.journalData.fullJournal.length > 0) {
+            let foundJourneyPoint = false;
+            const systemVisits = new Map();
+            this.journalData.fullJournal.forEach(entry => {
+                systemVisits.set(entry.coordinate_x + ',' + entry.coordinate_y, entry.date);
+            });
 
-        for (const system of this.systems) {
-            const systemX = padding.left + ((system.coordinate_x - this.offsetX) / 2000) * graphWidth * this.zoomLevel;
-            const systemY = this.canvas.height - padding.bottom - ((system.coordinate_y - this.offsetY) / 2000) * graphHeight * this.zoomLevel;
-            const distance = Math.sqrt(Math.pow(x - systemX, 2) + Math.pow(y - systemY, 2));
-
-            if (distance < 10) {
-                this.hoveredSystem = system;
-                found = true;
-                break;
+            for (const [coords, date] of systemVisits) {
+                const [coordX, coordY] = coords.split(',').map(Number);
+                const pixelX = padding.left + ((coordX - this.offsetX) / 2000) * graphWidth * this.zoomLevel;
+                const pixelY = this.canvas.height - padding.bottom - ((coordY - this.offsetY) / 2000) * graphHeight * this.zoomLevel;
+                
+                const distance = Math.sqrt(Math.pow(x - pixelX, 2) + Math.pow(y - pixelY, 2));
+                
+                if (distance < 10) {
+                    this.hoveredJourneyPoint = { x: coordX, y: coordY, date: date };
+                    this.hoveredSystem = null;
+                    foundJourneyPoint = true;
+                    break;
+                }
+            }
+            
+            if (!foundJourneyPoint) {
+                this.hoveredJourneyPoint = null;
             }
         }
 
-        if (!found) {
-            this.hoveredSystem = null;
+        // If not hovering over a journey point, check for systems
+        if (!this.hoveredJourneyPoint) {
+            let found = false;
+            for (const system of this.systems) {
+                const systemX = padding.left + ((system.coordinate_x - this.offsetX) / 2000) * graphWidth * this.zoomLevel;
+                const systemY = this.canvas.height - padding.bottom - ((system.coordinate_y - this.offsetY) / 2000) * graphHeight * this.zoomLevel;
+                const distance = Math.sqrt(Math.pow(x - systemX, 2) + Math.pow(y - systemY, 2));
+
+                if (distance < 10) {
+                    this.hoveredSystem = system;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                this.hoveredSystem = null;
+            }
         }
 
         this.draw();
@@ -350,7 +563,7 @@ class UniverseMap {
         // Calculate the coordinate under the mouse before zoom
         const padding = {
             left: 40,
-            right: 40,
+            right: 140,
             top: 25,
             bottom: 25
         };
@@ -465,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const journalData = await journalResponse.json();
                 if (journalData.fullJournal && journalData.fullJournal.length > 0) {
                     universeMap.setPlayerPosition(journalData.fullJournal[0]);
+                    universeMap.setJournalData(journalData);
                 }
                 
                 loadButton.disabled = false;
