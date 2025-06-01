@@ -1452,18 +1452,99 @@
         </div>
     </div>
 
+    <div id="probabilities-tab" class="tab-content">
+        <div class="form-section" style="display: flex; flex-direction: row; gap: 2em;">
+            <div class="optimizer-block" style="margin-top: 1.0em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px; max-height: 600px;">
+                <div class="block-label">
+                    System Occurrence Probability
+                    <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Calculate the probability of observing a system with specific characteristics. This tool uses complex probability calculations involving multiple parameters (nodes, categories, qualities) and their interactions. Due to the mathematical complexity of these calculations, some results may require further refinement. The current implementation is being continuously improved for accuracy.">ⓘ</span>
+                    <span style="color: #ff4f4f; margin-left: 5px; font-size: 0.8em; font-weight: normal;">beta</span>
+                </div>
+                <div class="form-row" style="margin-bottom: 1em;">
+                    <div class="form-group">
+                        <label for="inhabited_system" style="color: #e6eaf3;">System status:</label>
+                        <select id="inhabited_system" name="inhabited_system" style="width: 12em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; padding: 0.2em; border-radius: 4px;">
+                            <option value="any">Any</option>
+                            <option value="inhabited">System is inhabited</option>
+                            <option value="uninhabited">System is not inhabited</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="n_nodes">Number of nodes:</label>
+                        <div class="input-group">
+                            <select id="n_nodes_type" name="n_nodes_type" style="width: 6em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; margin-right: 0.5em;">
+                                <option value="exactly">Exactly</option>
+                                <option value="at least">At Least</option>
+                                <option value="any">Any</option>
+                            </select>
+                            <input type="number" id="n_nodes" name="n_nodes" value="1" min="1" max="5" style="width: 3.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="n_gatherable">Number of gathering nodes:</label>
+                        <div class="input-group">
+                            <select id="n_gatherable_type" name="n_gatherable_type" style="width: 6em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; margin-right: 0.5em;">
+                                <option value="exactly">Exactly</option>
+                                <option value="at least">At Least</option>
+                                <option value="any">Any</option>
+                            </select>
+                            <input type="number" id="n_gatherable" name="n_gatherable" value="1" min="0" max="5" style="width: 3.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="n_categories">Number of different categories:</label>
+                        <div class="input-group">
+                            <select id="n_categories_type" name="n_categories_type" style="width: 6em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; margin-right: 0.5em;">
+                                <option value="exactly">Exactly</option>
+                                <option value="at least">At Least</option>
+                                <option value="any">Any</option>
+                            </select>
+                            <input type="number" id="n_categories" name="n_categories" value="1" min="1" max="4" style="width: 3.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                        </div>
+                    </div>
+                </div>
+                <div id="quality-selections" style="margin-top: 0.5em; display: flex; flex-direction: column; gap: 0.3em;">
+                    <div class="form-row" style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0;">
+                        <label style="color: #e6eaf3; min-width: 180px;">Gathering node 1 quality:</label>
+                        <select style="width: 8em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; padding: 0.2em; border-radius: 4px;">
+                            <option value="any">Any</option>
+                            <option value="1-30">1-30</option>
+                            <option value="31-70">31-70</option>
+                            <option value="71-90">71-90</option>
+                            <option value="91-100">91-100</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 1em; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5em;">
+                    <button id="calculateProbabilityBtn" type="button" style="background: #36405a; color: #e6eaf3; border: 1px solid #2c3242; padding: 0.5em 1em; border-radius: 4px; cursor: pointer;">Calculate probability</button>
+                    <div id="probabilityResult" style="color: #e6eaf3; font-size: 1.1em;">
+                        <div>Probability: <span id="probability_value"></span></div>
+                        <div>Estimated number of systems in the universe: <span id="estimated_systems"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tab bar -->
     <div class="tab-container">
         <div class="tab active" data-tab="battling-tab">Battling</div>
         <div class="tab" data-tab="gathering-tab">Gathering</div>
         <div class="tab" data-tab="universe-map-tab">Universe Map</div>
+        <div class="tab" data-tab="probabilities-tab">Probabilities</div>
     </div>
 
     <div id="playerResult"></div>
     <footer>
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
-        <span style="margin-left: 2.5em;">Space Odyssey Version 1.1.4 2025-05-25</span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version 1.1.6 2025-05-30</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
 
@@ -1508,8 +1589,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-05-27";
-            const timeStr = "09:30";
+            const dateStr = "2025-06-01";
+            const timeStr = "14:25";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>
@@ -1560,5 +1641,203 @@
     </script>
     <script src="script.js"></script>
     <script src="universe_map.js"></script>
+    <script type="module">
+        // Import probability functions
+        import { probability_of_observation_with_per_gatherable_qualities } from './probabilities.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Declare variables at the top
+            const nNodesType = document.getElementById('n_nodes_type');
+            const nNodes = document.getElementById('n_nodes');
+            const nGatherableType = document.getElementById('n_gatherable_type');
+            const nGatherable = document.getElementById('n_gatherable');
+            const nCategoriesType = document.getElementById('n_categories_type');
+            const nCategories = document.getElementById('n_categories');
+            const qualitySelections = document.getElementById('quality-selections');
+
+            // Quality ranges based on the probabilities.js file
+            const qualityRanges = [
+                { label: "1-30", value: "1-30" },
+                { label: "31-70", value: "31-70" },
+                { label: "71-90", value: "71-90" },
+                { label: "91-100", value: "91-100" }
+            ];
+
+            function updateQualitySelections() {
+                const numGatherable = parseInt(nGatherable.value) || 0;
+                const isAny = nGatherableType.value === 'any';
+                
+                // Keep the first selection row
+                const firstSelection = qualitySelections.firstElementChild;
+                qualitySelections.innerHTML = '';
+                if (firstSelection) {
+                    qualitySelections.appendChild(firstSelection);
+                }
+                
+                if (isAny || numGatherable === 0) {
+                    qualitySelections.style.display = 'none';
+                    return;
+                }
+
+                qualitySelections.style.display = 'flex';
+
+                // Add additional selections starting from index 1
+                for (let i = 1; i < numGatherable; i++) {
+                    const selectionDiv = document.createElement('div');
+                    selectionDiv.className = 'form-row';
+                    selectionDiv.style.marginBottom = '0';
+                    selectionDiv.style.display = 'flex';
+                    selectionDiv.style.alignItems = 'center';
+                    selectionDiv.style.gap = '0.5em';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = `Gathering node ${i + 1} quality:`;
+                    label.style.color = '#e6eaf3';
+                    label.style.minWidth = '180px';
+                    
+                    const select = document.createElement('select');
+                    select.style.width = '8em';
+                    select.style.background = '#36405a';
+                    select.style.color = '#e6eaf3';
+                    select.style.border = '1px solid #2c3242';
+                    select.style.padding = '0.2em';
+                    select.style.borderRadius = '4px';
+                    
+                    // Add "Any" option
+                    const anyOption = document.createElement('option');
+                    anyOption.value = 'any';
+                    anyOption.textContent = 'Any';
+                    select.appendChild(anyOption);
+                    
+                    // Add quality range options
+                    qualityRanges.forEach(range => {
+                        const option = document.createElement('option');
+                        option.value = range.value;
+                        option.textContent = range.label;
+                        select.appendChild(option);
+                    });
+                    
+                    selectionDiv.appendChild(label);
+                    selectionDiv.appendChild(select);
+                    qualitySelections.appendChild(selectionDiv);
+                }
+            }
+
+            function handleTypeChange(selectElement, inputElement) {
+                const isAny = selectElement.value === 'any';
+                inputElement.disabled = isAny;
+                inputElement.readOnly = isAny;
+                inputElement.style.background = isAny ? '#2c3242' : '#36405a';
+                inputElement.style.cursor = isAny ? 'not-allowed' : 'text';
+                inputElement.style.opacity = isAny ? '0.7' : '1';
+                inputElement.style.pointerEvents = isAny ? 'none' : 'auto';
+                
+                // Update quality selections when gatherable type changes
+                if (selectElement === nGatherableType) {
+                    updateQualitySelections();
+                }
+            }
+
+            // Add event listeners for type changes
+            ['n_nodes_type', 'n_gatherable_type', 'n_categories_type'].forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.addEventListener('change', function() {
+                        handleTypeChange(this, document.getElementById(id.replace('_type', '')));
+                    });
+                    // Set initial state
+                    handleTypeChange(select, document.getElementById(id.replace('_type', '')));
+                }
+            });
+
+            // Prevent input when disabled
+            ['n_nodes', 'n_gatherable', 'n_categories'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('keydown', function(e) {
+                        if (this.disabled) {
+                            e.preventDefault();
+                            return false;
+                        }
+                    });
+                    input.addEventListener('input', function(e) {
+                        if (this.disabled) {
+                            e.preventDefault();
+                            this.value = '';
+                            return false;
+                        }
+                    });
+                }
+            });
+
+            // Add input event listener for n_gatherable to update quality selections
+            nGatherable.addEventListener('input', updateQualitySelections);
+
+            // Set initial states
+            handleTypeChange(nNodesType, nNodes);
+            handleTypeChange(nGatherableType, nGatherable);
+            handleTypeChange(nCategoriesType, nCategories);
+            
+            // Ensure quality selections are initialized
+            updateQualitySelections();
+
+            // Calculate probability
+            document.getElementById('calculateProbabilityBtn').addEventListener('click', function() {
+                const nNodes = document.getElementById('n_nodes_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_nodes').value);
+                const nNodesType = document.getElementById('n_nodes_type').value;
+                const nGatherable = document.getElementById('n_gatherable_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_gatherable').value);
+                const nGatherableType = document.getElementById('n_gatherable_type').value;
+                const nCategories = document.getElementById('n_categories_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_categories').value);
+                const nCategoriesType = document.getElementById('n_categories_type').value;
+
+                // Collect quality ranges from all quality selection dropdowns
+                const qualityRanges = [];
+                document.querySelectorAll('#quality-selections select').forEach(select => {
+                    if (select.value === 'any') {
+                        qualityRanges.push('Any');
+                    } else {
+                        const [start, end] = select.value.split('-').map(Number);
+                        qualityRanges.push([start, end]);
+                    }
+                });
+
+                // Calculate probability
+                const inhabitedSystemValue = document.getElementById('inhabited_system').value;
+                const inhabitedSystem = inhabitedSystemValue === 'any' ? null : inhabitedSystemValue === 'inhabited';
+                
+                const probability = probability_of_observation_with_per_gatherable_qualities(
+                    nNodes,
+                    nNodesType,
+                    nGatherable,
+                    nGatherableType,
+                    nCategories,
+                    nCategoriesType,
+                    qualityRanges,
+                    inhabitedSystem
+                );
+
+                // Format probability with more decimal places for small values
+                const formatProbability = (prob) => {
+                    if (prob < 0.001) {
+                        return `${(prob * 100).toFixed(6)}%`;
+                    }
+                    return `${(prob * 100).toFixed(2)}%`;
+                };
+
+                // Calculate and format estimated number of systems
+                const estimatedSystems = probability * 4000000;
+                const formatEstimatedSystems = (num) => {
+                    if (num < 0.1) {
+                        return num.toFixed(6);
+                    }
+                    return num.toFixed(2);
+                };
+
+                // Display results
+                document.getElementById('probability_value').textContent = formatProbability(probability);
+                document.getElementById('estimated_systems').textContent = formatEstimatedSystems(estimatedSystems);
+            });
+        });
+    </script>
 </body>
 </html> 

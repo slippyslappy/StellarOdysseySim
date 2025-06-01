@@ -1,8 +1,11 @@
+2025-06-01 14:25
+- Tentative first release of probability calculator. No guarantee of correctness whatsoever.
+
 2025-05-27 09:30
 - Introduced interactive zoomable and draggable map of the publicly discovered universe
 
 2025-05-26 20:15
-- Optimizer has been reworked once again. Should work for everybody now. If you have troubles obtaining good results, reach out to me. Dragon is not yet included in total credits and exeprience. 
+- Optimizer has been reworked once again. Should work for everybody now. If you have troubles obtaining good results, reach out to me. Dragon is not yet included in total credits and experience. 
 
 2025-05-26 09:17
 - Introduced tab visaulization and tab "Universe Map"
