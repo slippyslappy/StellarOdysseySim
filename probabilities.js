@@ -19,7 +19,7 @@ function comb(n, k) {
 function prob_at_least_k_categories(g, k, m = 4) {
     if (k > m || k > g) return 0;
     if (k === 0) return 1;
-    if (k === 1) return 1 - Math.pow((m-1)/m, g);
+    if (k === 1) return 1.0;  // Always 1.0 since every gathering node must have a category
     
     // For k > 1, use inclusion-exclusion principle
     let total = 0;
