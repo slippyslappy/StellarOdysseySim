@@ -1,3 +1,6 @@
+2025-06-06 16:20
+- Corrected bug with Spectres not being imported through API and included available but unused stats in the optimization
+
 2025-06-01 14:25
 - Tentative first release of probability calculator. No guarantee of correctness whatsoever.
 

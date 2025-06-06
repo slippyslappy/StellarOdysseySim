@@ -74,7 +74,7 @@ class Optimizer {
         const total_attack_to_have = this.mob.hp / hits_to_kill + 1;
         const needed_pow = Math.ceil(Math.max(0.0, (total_attack_to_have - this.player.n_clones * this.player.weapon_dmg * (1 + total_damage_modifier)) / (7.0 * this.player.n_clones * (1 + total_damage_modifier))));
 
-        const nb_points = Math.floor(this.player.pow + this.player.pre + this.player.eva + this.player.hull);
+        const nb_points = Math.floor(this.player.pow + this.player.pre + this.player.eva + this.player.hull + this.player.available);
         const available_points = nb_points - needed_pow - needed_hull;
         const lcl_result = [];
 
@@ -135,7 +135,7 @@ class Optimizer {
         const needed_power = Math.ceil(
             Math.max(0.0, (total_attack_to_have - player_dmg) / (7.0 * this.player.n_clones * (1 + total_damage_modifier))));
 
-        const nb_points = Math.floor(this.player.pow + this.player.pre + this.player.eva + this.player.hull);
+        const nb_points = Math.floor(this.player.pow + this.player.pre + this.player.eva + this.player.hull + this.player.available);
         const available_points = nb_points - needed_power - needed_hull;
 
         let best_build = [0, 0, 0, 0];

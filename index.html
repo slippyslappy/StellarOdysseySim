@@ -336,6 +336,7 @@
                     precision: form.precision.value,
                     evasion: form.evasion.value,
                     hull: form.hull.value,
+                    available: form.available?.value || 0,
                     weapon_dmg: form.weapon_dmg.value,
                     shield_def: form.shield_def.value,
                     n_clones: form.n_clones.value,
@@ -569,6 +570,7 @@
                 const precision = parseInt(form.precision.value) || 0;
                 const evasion = parseInt(form.evasion.value) || 0;
                 const hull = parseInt(form.hull.value) || 0;
+                const available = parseInt(form.available.value) || 0;
                 const weapon_dmg = parseInt(form.weapon_dmg.value) || 0;
                 const shield_def = parseInt(form.shield_def.value) || 0;
                 const n_clones = parseInt(form.n_clones.value) || 1;
@@ -604,7 +606,7 @@
 
                 // Create player
                 const player = new Player({
-                    power, precision, evasion, hull, weapon_dmg, shield_def, n_clones, vip_status,
+                    power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
                 });
 
@@ -671,7 +673,7 @@
 
                 // Create player
                 const player = new Player({
-                    power, precision, evasion, hull, weapon_dmg, shield_def, n_clones, vip_status,
+                    power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
                 });
 
@@ -762,6 +764,7 @@
                         precision,
                         evasion,
                         hull,
+                        available: parseInt(document.getElementById('available').value) || 0,
                         weapon_dmg: player.weapon_dmg,
                         shield_def: player.shield_def,
                         n_clones: player.n_clones,
@@ -928,6 +931,7 @@
                     form.precision.value = data.stats.precision || 0;
                     form.evasion.value = data.stats.evasion || 0;
                     form.hull.value = data.stats.hull || 0;
+                    document.getElementById('available').value = data.stats.available || 0;
                 }
 
                 // Update ship data
@@ -1081,9 +1085,10 @@
                             </div>
                         </div>
                     </div>
+                    <input type="hidden" id="available" name="available" value="0">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="weapon_dmg">Weapon Damage:</label>
+                            <label for="weapon_dmg">Weapon damage:</label>
                             <div class="input-group">
                                 <button type="button" class="minus-btn" data-target="weapon_dmg">-</button>
                                 <input type="number" id="weapon_dmg" name="weapon_dmg" value="0" min="0">
@@ -1544,7 +1549,7 @@
     <footer>
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
-        <span style="margin-left: 2.5em;">Space Odyssey Version 1.1.6 2025-05-30</span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version 1.1.10 2025-06-03</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
 
@@ -1589,8 +1594,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-06-01";
-            const timeStr = "14:25";
+            const dateStr = "2025-06-06";
+            const timeStr = "16:20";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>
