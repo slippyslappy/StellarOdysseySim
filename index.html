@@ -350,6 +350,7 @@
                     mob_level: form.mob_level.value,
                     // Squadron buffs
                     income_boost: form.income_boost?.value || 0,
+                    battle_boost: form.battle_boost?.value || 0,
                     reputation: form.reputation?.value || 0,
                     // Clone modifiers
                     clone_modifiers: cloneModifiers,
@@ -518,13 +519,13 @@
                         step = 1;
                     } else if (['precision', 'hull', 'power', 'evasion'].includes(targetId)) {
                         step = 5;
-                    } else if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'reputation'].includes(targetId)) {
+                    } else if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'battle_boost', 'reputation'].includes(targetId)) {
                         step = 1;
                     }
                     
                     val = Math.max(min, val - step);
                     // Round to 1 decimal place for percentage fields
-                    if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'reputation'].includes(targetId)) {
+                    if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'battle_boost', 'reputation'].includes(targetId)) {
                         val = Math.round(val * 10) / 10;
                     }
                     input.value = val;
@@ -545,13 +546,13 @@
                         step = 1;
                     } else if (['precision', 'hull', 'power', 'evasion'].includes(targetId)) {
                         step = 5;
-                    } else if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'reputation'].includes(targetId)) {
+                    } else if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'battle_boost', 'reputation'].includes(targetId)) {
                         step = 1;
                     }
                     
                     val = Math.min(max, val + step);
                     // Round to 1 decimal place for percentage fields
-                    if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'reputation'].includes(targetId)) {
+                    if (['dodge_percentage', 'rare_drop_increase', 'maneuverability', 'income_boost', 'battle_boost', 'reputation'].includes(targetId)) {
                         val = Math.round(val * 10) / 10;
                     }
                     input.value = val;
@@ -605,9 +606,10 @@
                 }
 
                 // Create player
+                const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
                 const player = new Player({
                     power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
-                    weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
+                    weapon_ele1, weapon_ele2, shield_ele1, shield_ele2, battle_boost
                 });
 
                 // Create and run battle
@@ -615,8 +617,8 @@
                 const win_chance = battle.repeat_fights(n_fights);
 
                 // Get income boost and reputation values
-                const income_boost = parseFloat(form.income_boost?.value || 0) / 100;
-                const reputation = parseFloat(form.reputation?.value || 0) / 100;
+                const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
+                const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
 
                 // Print result
                 const creditsPerHour = battle.get_revenue('hourly', win_chance, income_boost, reputation);
@@ -672,14 +674,15 @@
                 const mob = new Mob(MobName[mob_enum_key], mob_level);
 
                 // Create player
+                const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
                 const player = new Player({
                     power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
-                    weapon_ele1, weapon_ele2, shield_ele1, shield_ele2
+                    weapon_ele1, weapon_ele2, shield_ele1, shield_ele2, battle_boost
                 });
 
                 const optimizerFightsInput = document.getElementById('optimizer_n_fights');
                 const n_fights = parseInt(optimizerFightsInput.value);
-                const reputation = parseFloat(form.reputation?.value || 0) / 100;
+                const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
                 const optimizer = new Optimizer(player, mob, list_modifiers, n_fights, reputation);
                 let result;
                 
@@ -758,6 +761,7 @@
 
                 // Update the results display
                 if (result && result.bestStats && result.winChance !== undefined) {
+                    const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
                     const [power, precision, evasion, hull] = result.bestStats;
                     const tmp_player = new Player({
                         power,
@@ -772,13 +776,14 @@
                         weapon_ele1: player.weapon_ele1,
                         weapon_ele2: player.weapon_ele2,
                         shield_ele1: player.shield_ele1,
-                        shield_ele2: player.shield_ele2
+                        shield_ele2: player.shield_ele2,
+                        battle_boost: battle_boost
                     });
                     const battle = new Battle({ player: tmp_player, mob: mob, list_modifiers: list_modifiers });
                     
                     // Get income boost and reputation values
-                    const income_boost = parseFloat(form.income_boost?.value || 0) / 100;
-                    const reputation = parseFloat(form.reputation?.value || 0) / 100;
+                    const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
+                    const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
 
                     const creditsPerHour = battle.get_revenue('hourly', result.winChance, income_boost, reputation);
                     const creditsPerDay = battle.get_revenue('daily', result.winChance, income_boost, reputation);
@@ -992,14 +997,14 @@
 
                 // Handle spacestation incomeboost
                 if (data.spacestation && data.spacestation.incomeboost) {
-                    form.income_boost.value = data.spacestation.incomeboost * 2.0;
+                    form.income_boost.value = data.spacestation.incomeboost;
                 } else {
                     form.income_boost.value = 0;
                 }
 
                 // Handle reputation
                 if (data.reputation !== null && data.reputation !== undefined) {
-                    form.reputation.value = (data.reputation * 0.2).toFixed(1);
+                    form.reputation.value = data.reputation;
                 } else {
                     form.reputation.value = 0;
                 }
@@ -1205,20 +1210,28 @@
                     <div class="block-label">Squadron Buffs</div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="income_boost">Space station:</label>
+                            <label for="battle_boost">Battle Boost Level:</label>
                             <div class="input-group">
-                                <button type="button" class="minus-btn" data-target="income_boost">-</button>
-                                <input type="number" id="income_boost" name="income_boost" value="0" min="0" max="100" step="0.1" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
-                                <span style="margin: 0 0.2em;">%</span>
-                                <button type="button" class="plus-btn" data-target="income_boost">+</button>
+                                <button type="button" class="minus-btn" data-target="battle_boost">-</button>
+                                <input type="number" id="battle_boost" name="battle_boost" value="0" min="0" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                                <button type="button" class="plus-btn" data-target="battle_boost">+</button>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="reputation">Reputation:</label>
+                            <label for="income_boost">Income Boost Level:</label>
+                            <div class="input-group">
+                                <button type="button" class="minus-btn" data-target="income_boost">-</button>
+                                <input type="number" id="income_boost" name="income_boost" value="0" min="0" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                                <button type="button" class="plus-btn" data-target="income_boost">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reputation">Reputation Level:</label>
                             <div class="input-group">
                                 <button type="button" class="minus-btn" data-target="reputation">-</button>
-                                <input type="number" id="reputation" name="reputation" value="0" min="0" max="100" step="0.1" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
-                                <span style="margin: 0 0.2em;">%</span>
+                                <input type="number" id="reputation" name="reputation" value="0" min="0" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
                                 <button type="button" class="plus-btn" data-target="reputation">+</button>
                             </div>
                         </div>
