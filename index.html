@@ -1048,7 +1048,7 @@
 <body>
     <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 2.2em;">
         <div style="font-size: 1.7em; font-weight: 600; letter-spacing: 0.01em;">Stellar Odyssey Simulator and Optimizer</div>
-        <span style="color: #ff4f4f; font-size: 1.7em; font-weight: 600; letter-spacing: 0.01em;">(Currently being updated, use with caution)</span>
+        <span style="color: #ff4f4f; font-size: 1.7em; font-weight: 600; letter-spacing: 0.01em;">(API import for Squadron buffs currently not working, insert the levels manually)</span>
     </div>
     <!-- Tab content sections -->
     <div id="battling-tab" class="tab-content active">
@@ -1564,7 +1564,7 @@
     <footer>
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
-        <span style="margin-left: 2.5em;">Space Odyssey Version 1.1.10 2025-06-03</span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version 1.2.0 - Squadrons 2.0 - 2025-06-15</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
 
@@ -1609,8 +1609,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-06-06";
-            const timeStr = "16:20";
+            const dateStr = "2025-06-15";
+            const timeStr = "19:03";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>

@@ -16,6 +16,7 @@ class Player {
         this.shield_ele1 = shield_ele1;
         this.shield_ele2 = shield_ele2;
         this.vip_status = vip_status;
+        this.battle_boost = battle_boost
 
         this.hp = Math.floor(((7.0 * hull) + shield_def) * (1.0 + battle_boost));
         this.dmg = Math.floor((((7.0 * this.pow) + weapon_dmg) * this.n_clones) * (1.0 + battle_boost));
