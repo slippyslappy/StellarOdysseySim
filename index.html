@@ -618,7 +618,7 @@
 
                 // Get income boost and reputation values
                 const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
-                const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
+                const reputation = (parseFloat(form.reputation?.value || 0) / 100);
 
                 // Print result
                 const creditsPerHour = battle.get_revenue('hourly', win_chance, income_boost, reputation);
@@ -682,7 +682,7 @@
 
                 const optimizerFightsInput = document.getElementById('optimizer_n_fights');
                 const n_fights = parseInt(optimizerFightsInput.value);
-                const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
+                const reputation = (parseFloat(form.reputation?.value || 0) / 100);
                 const optimizer = new Optimizer(player, mob, list_modifiers, n_fights, reputation);
                 let result;
                 
@@ -783,7 +783,7 @@
                     
                     // Get income boost and reputation values
                     const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
-                    const reputation = (parseInt(form.reputation?.value || 0) * 0.05);
+                    const reputation = (parseFloat(form.reputation?.value || 0) / 100);
 
                     const creditsPerHour = battle.get_revenue('hourly', result.winChance, income_boost, reputation);
                     const creditsPerDay = battle.get_revenue('daily', result.winChance, income_boost, reputation);
@@ -995,6 +995,13 @@
                     }
                 }
 
+                // Handle spacestation battleboost
+                if (data.spacestation && data.spacestation.battling_boost) {
+                    form.battle_boost.value = data.spacestation.battling_boost;
+                } else {
+                    form.battle_boost.value = 0;
+                }
+
                 // Handle spacestation incomeboost
                 if (data.spacestation && data.spacestation.incomeboost) {
                     form.income_boost.value = data.spacestation.incomeboost;
@@ -1048,7 +1055,6 @@
 <body>
     <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 2.2em;">
         <div style="font-size: 1.7em; font-weight: 600; letter-spacing: 0.01em;">Stellar Odyssey Simulator and Optimizer</div>
-        <span style="color: #ff4f4f; font-size: 1.7em; font-weight: 600; letter-spacing: 0.01em;">(API import for Squadron buffs currently not working, insert the levels manually)</span>
     </div>
     <!-- Tab content sections -->
     <div id="battling-tab" class="tab-content active">
@@ -1228,10 +1234,10 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="reputation">Reputation Level:</label>
+                            <label for="reputation">Reputation:</label>
                             <div class="input-group">
                                 <button type="button" class="minus-btn" data-target="reputation">-</button>
-                                <input type="number" id="reputation" name="reputation" value="0" min="0" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">
+                                <input type="number" id="reputation" name="reputation" value="0" min="0" style="width: 5.5em; background: #36405a; color: #e6eaf3; border: 1px solid #2c3242;">%
                                 <button type="button" class="plus-btn" data-target="reputation">+</button>
                             </div>
                         </div>
@@ -1610,7 +1616,7 @@
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
             const dateStr = "2025-06-15";
-            const timeStr = "19:03";
+            const timeStr = "20:31";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>

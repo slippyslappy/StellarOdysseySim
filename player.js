@@ -4,7 +4,9 @@ class Player {
     constructor({ power, precision, evasion, hull, available, weapon_dmg, shield_def, n_clones, vip_status, weapon_ele1 = null, weapon_ele2 = null, shield_ele1 = null, shield_ele2 = null, battle_boost = 0.0 }) {
         
         this.pow = power;
+        this.pre_before_boost = precision
         this.pre = Math.floor(precision * (1.0 + battle_boost));
+        this.eva_before_boost = evasion
         this.eva = Math.floor(evasion * (1.0 + battle_boost));
         this.hull = hull;
         this.available = available;
