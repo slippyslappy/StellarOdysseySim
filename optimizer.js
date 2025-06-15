@@ -111,6 +111,9 @@ class Optimizer {
     }
 
     findBestBuild(htd, htk, target = 'credits', verbose = false) {
+
+        console.log(htk, htd)
+
         const total_hp_to_have = (htd - 1) * this.mob.dmg + 1;
         const remaining_hp = Math.max(0.0, total_hp_to_have - this.player.shield_def);
         const needed_hull = Math.ceil(remaining_hp / 7.0);
@@ -199,8 +202,8 @@ class Optimizer {
     }
 
     iterateThroughBuilds(target = 'credits', verbose = false) {
-        const range_htk = Array.from({length: 7}, (_, i) => i + 4); // range(4,11)
-        const range_htd = Array.from({length: 4}, (_, i) => i + 3); // range(3,7)
+        const range_htk = Array.from({length: 11}, (_, i) => i + 3); // [3, 4, ..., 13]
+        const range_htd = Array.from({length: 8}, (_, i) => i + 2); // [2, 3, ..., 9]
 
         let best_build = [0, 0, 0, 0];
         let best_res = 0;
@@ -211,6 +214,7 @@ class Optimizer {
         for (const htk of range_htk) {
             for (const htd of range_htd) {
                 const [build, res, win_chance] = this.findBestBuild(htd, htk, target);
+
                 if (res > best_res) {
                     best_res = res;
                     best_build = build;

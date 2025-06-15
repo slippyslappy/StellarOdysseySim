@@ -688,8 +688,8 @@
                 
                 if (isLongOptimize) {
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
-                    const range_htk = Array.from({length: 7}, (_, i) => i + 4); // range(4,11)
-                    const range_htd = Array.from({length: 4}, (_, i) => i + 3); // range(3,7)
+                    const range_htk = Array.from({length: 14}, (_, i) => i + 3); // [3, 4, ..., 13]
+                    const range_htd = Array.from({length: 12}, (_, i) => i + 2); // [2, 3, ..., 9]
                     const totalIterations = range_htk.length * range_htd.length;
                     let currentIteration = 0;
 
