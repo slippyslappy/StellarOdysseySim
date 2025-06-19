@@ -856,6 +856,7 @@
                         form.precision.value = precision;
                         form.evasion.value = evasion;
                         form.hull.value = hull;
+                        updateUnallocatedStatsDisplay();
                     };
                 } else {
                     // Reset all values to "-"
@@ -1652,7 +1653,7 @@
     <footer>
         <span>Proudly made by anfneub</span>
         <span style="margin-left: 2.5em;" id="lastUpdated"></span>
-        <span style="margin-left: 2.5em;">Space Odyssey Version 1.2.0 - Squadrons 2.0 - 2025-06-15</span>
+        <span style="margin-left: 2.5em;">Space Odyssey Version 1.2.1 2025-06-16</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
     
@@ -1660,27 +1661,30 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.tab');
-            
             // Function to switch tabs
             function switchTab(tab) {
                 // Remove active class from all tabs and content
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
                 // Add active class to clicked tab and corresponding content
                 tab.classList.add('active');
                 const tabId = tab.getAttribute('data-tab');
                 document.getElementById(tabId).classList.add('active');
-                
                 // Save active tab to localStorage
                 localStorage.setItem('activeTab', tabId);
+                // Pause/resume universe map animation if needed
+                if (typeof UniverseMap !== 'undefined' && UniverseMap.getInstance) {
+                    if (tabId === 'universe-map-tab') {
+                        UniverseMap.getInstance()?.resume?.();
+                    } else {
+                        UniverseMap.getInstance()?.pause?.();
+                    }
+                }
             }
-            
             // Add click handlers to all tabs
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => switchTab(tab));
             });
-            
             // Restore active tab from localStorage
             const savedTab = localStorage.getItem('activeTab');
             if (savedTab) {
@@ -1697,8 +1701,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-06-15";
-            const timeStr = "20:31";
+            const dateStr = "2025-06-19";
+            const timeStr = "12:48";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>

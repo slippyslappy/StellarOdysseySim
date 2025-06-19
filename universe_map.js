@@ -1,5 +1,10 @@
 class UniverseMap {
+    static instance = null;
+    static getInstance() {
+        return UniverseMap.instance;
+    }
     constructor(canvasId) {
+        UniverseMap.instance = this;
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         this.systems = [];
@@ -67,6 +72,8 @@ class UniverseMap {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
         this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+
+        this.paused = false;
     }
 
     resizeCanvas() {
@@ -137,32 +144,54 @@ class UniverseMap {
         this.draw();
     }
 
-    startPulseAnimation() {
-        const animate = () => {
-            // Add new ripple every 0.3 seconds (was 0.2)
-            if (this.pulsePhase % (Math.PI * 2) < 0.1) {
-                this.ripples.push({
-                    size: 5, // Start with a small circle
-                    opacity: 1,
-                    startTime: Date.now()
-                });
-            }
-            this.pulsePhase = (this.pulsePhase + 0.05) % (Math.PI * 2); // Slower phase change for less frequent ripples
+    pause() {
+        this.paused = true;
+        if (this.pulseAnimation) {
+            cancelAnimationFrame(this.pulseAnimation);
+            this.pulseAnimation = null;
+        }
+    }
 
-            // Update existing ripples
-            const currentTime = Date.now();
-            this.ripples = this.ripples.filter(ripple => {
-                const age = currentTime - ripple.startTime;
-                const progress = age / 750; // 750ms = 0.75 seconds for full animation (was 500ms)
-                
-                if (progress >= 1) return false; // Remove after 0.75 seconds
-                
-                ripple.size = 5 + (progress * 25); // Expand from 5 to 30
-                ripple.opacity = 1 - progress; // Fade out linearly
-                return true;
-            });
-
+    resume() {
+        if (!this.paused) return;
+        this.paused = false;
+        if (this.showCurrentPosition && this.playerPosition) {
+            this.startPulseAnimation();
+        } else {
             this.draw();
+        }
+    }
+
+    startPulseAnimation() {
+        if (this.paused) return;
+        let lastFrameTime = 0;
+        const FRAME_INTERVAL = 50; // ms, for 20fps
+        const animate = (now) => {
+            if (this.paused) return;
+            if (!lastFrameTime || now - lastFrameTime >= FRAME_INTERVAL) {
+                lastFrameTime = now;
+                // Add new ripple every 0.3 seconds (was 0.2)
+                if (this.pulsePhase % (Math.PI * 2) < 0.1) {
+                    this.ripples.push({
+                        size: 5, // Start with a small circle
+                        opacity: 1,
+                        startTime: Date.now()
+                    });
+                }
+                this.pulsePhase = (this.pulsePhase + 0.05) % (Math.PI * 2); // Slower phase change for less frequent ripples
+
+                // Update existing ripples
+                const currentTime = Date.now();
+                this.ripples = this.ripples.filter(ripple => {
+                    const age = currentTime - ripple.startTime;
+                    const progress = age / 750; // 750ms = 0.75 seconds for full animation (was 500ms)
+                    if (progress >= 1) return false; // Remove after 0.75 seconds
+                    ripple.size = 5 + (progress * 25); // Expand from 5 to 30
+                    ripple.opacity = 1 - progress; // Fade out linearly
+                    return true;
+                });
+                this.draw();
+            }
             this.pulseAnimation = requestAnimationFrame(animate);
         };
         this.pulseAnimation = requestAnimationFrame(animate);
@@ -189,6 +218,7 @@ class UniverseMap {
     }
 
     draw() {
+        if (this.paused) return;
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;

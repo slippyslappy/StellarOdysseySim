@@ -1,3 +1,8 @@
+2025-06-19 12:48
+- Added unallocated stats visualization near player stats
+- Added concurrent workers for faster optimization (thanks to Sakaki Chizuru for the implementation)
+- Made page less CPU intensive by pausing animation when universe map is not being shown  
+
 2025-06-15 20:31
 - Fixed a bug where total number of stats was larger than available stats
 - Updated API import for Space Station 
