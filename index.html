@@ -703,8 +703,12 @@
                 if (isLongOptimize) {
                     const pool = new WorkerPool(navigator.hardwareConcurrency || 8);
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
-                    const range_htk = Array.from({length: 14}, (_, i) => i + 3); // [3, 4, ..., 13]
-                    const range_htd = Array.from({length: 12}, (_, i) => i + 2); // [2, 3, ..., 9]
+                    // Utility function to create a range [start, end] 
+                    function range(start, end) {
+                        return Array.from({length: end - start + 1}, (_, i) => i + start);
+                    }
+                    const range_htk = range(2, 20);
+                    const range_htd = range(1, 8);
                     const totalTasks = range_htk.length * range_htd.length;
                     let completedTasks = 0;
                     
