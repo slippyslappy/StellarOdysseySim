@@ -112,7 +112,7 @@ class Optimizer {
     
     findBestBuild(htd, htk, target = 'credits', verbose = false) {
                 
-        const total_hp_to_have = (htd - 1) * this.mob.dmg + 1;
+        const total_hp_to_have = ((htd - 1) * this.mob.dmg + 1) / (1 + this.player.battle_boost);
         const remaining_hp = Math.max(0.0, total_hp_to_have - this.player.shield_def);
         const needed_hull = Math.ceil(remaining_hp / 7.0);
         
@@ -132,7 +132,7 @@ class Optimizer {
             }
         }
         
-        const total_attack_to_have = this.mob.hp / htk + 1;
+        const total_attack_to_have = (this.mob.hp / htk + 1) / (1 + this.player.battle_boost);
         const player_dmg = this.player.n_clones * this.player.weapon_dmg * (1 + total_damage_modifier);
         const needed_power = Math.ceil(Math.max(0.0, (total_attack_to_have - player_dmg) / (7.0 * this.player.n_clones * (1 + total_damage_modifier))));
         

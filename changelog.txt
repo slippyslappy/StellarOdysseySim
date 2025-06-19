@@ -1,3 +1,6 @@
+2025-06-19 23:26
+- Increased precision of optimizer
+
 2025-06-19 12:48
 - Added unallocated stats visualization near player stats
 - Added concurrent workers for faster optimization (thanks to Sakaki Chizuru for the implementation)
