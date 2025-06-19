@@ -47,7 +47,7 @@
             display: block;
         }
         /* End tab styles */
-
+        
         .form-section > div:first-child { flex: none; width: 420px; min-width: 420px; }
         .form-row { display: flex; gap: 1em; margin-bottom: 1em; }
         .form-group { flex: 1; display: flex; flex-direction: column; min-width: 180px; color: #e6eaf3; font-size: 1.08em; }
@@ -289,6 +289,16 @@
             color: #e6eaf3;
             border: 1px solid #2c3242;
         }
+        .player-unallocated-label {
+            font-size: 0.95em;
+            color: #e6eaf3;
+            font-weight: 400;
+            margin-left: 6em;
+            margin-right: 0.5em;
+            margin-top: 0.2em;
+            margin-bottom: 0.2em;
+            /* Match .form-group label */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script type="module">
@@ -298,7 +308,8 @@
         import { CloneModifiers, MobName } from './dataclasses.js';
         import { millify } from './utils.js';
         import { Optimizer } from './optimizer.js';
-
+        import { WorkerPool } from './workerpool.js';
+        
         // Predefined test values for easy testing
         const DEFAULTS = {
             power: 0,
@@ -317,17 +328,20 @@
             mob_level: 1,
             n_fights: 1000,
             clone_modifiers: [
-                { crit: 0, critdmg: 0, dual: 0 }
+            { crit: 0, critdmg: 0, dual: 0 }
             ]
         };
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('playerForm');
             const resultDiv = document.getElementById('playerResult');
             const submitBtn = document.getElementById('submitBtn');
             const cloneModifiersSection = document.getElementById('cloneModifiersSection');
             let cloneModifiers = [];
-
+            
+            // Declare totalStatPool for use after API import
+            let totalStatPool = null;
+            
             // Function to save all settings to localStorage
             function saveSettings() {
                 const settings = {
@@ -370,7 +384,7 @@
                 };
                 localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
             }
-
+            
             // Load saved settings or use defaults
             const savedSettings = localStorage.getItem('stellarOdysseySettings');
             if (savedSettings) {
@@ -411,14 +425,14 @@
                 cloneModifiers = DEFAULTS.clone_modifiers.map(mod => ({...mod}));
                 renderCloneModifiers(parseInt(DEFAULTS.n_clones) || 1);
             }
-
+            
             // For selects and n_clones, trigger input event to update UI
             const nClonesInput = document.getElementById('n_clones');
             nClonesInput.addEventListener('input', () => {
                 let n = Math.min(Math.max(parseInt(nClonesInput.value) || 1, 1), 10);
                 nClonesInput.value = n;
                 if (cloneModifiers.length > n) {
-                    cloneModifiers = cloneModifiers.slice(0, n);re
+                    cloneModifiers = cloneModifiers.slice(0, n);
                 } else if (cloneModifiers.length < n) {
                     while (cloneModifiers.length < n) {
                         cloneModifiers.push({ crit: 0.0, critdmg: 0.0, dual: 0.0 });
@@ -427,7 +441,7 @@
                 renderCloneModifiers(n);
                 saveSettings();
             });
-
+            
             function renderCloneModifiers(n) {
                 // Always use cloneModifiers.length as the source of truth
                 cloneModifiersSection.innerHTML = '';
@@ -504,7 +518,7 @@
                     });
                 });
             }
-
+            
             // Handle plus/minus for player fields
             document.querySelectorAll('.minus-btn:not([data-clone])').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -559,7 +573,7 @@
                     input.dispatchEvent(new Event('input'));
                 });
             });
-
+            
             // Simulate button logic
             const simulateBtn = document.getElementById('simulateBtn');
             const battleResultDiv = document.createElement('div');
@@ -580,23 +594,23 @@
                 const shield_ele1 = form.shield_ele1.value || null;
                 const shield_ele2 = form.shield_ele2.value || null;
                 const vip_status = form.vip_status.checked;
-
+                
                 // Gather clone modifiers
                 const list_modifiers = cloneModifiers.map(mod =>
-                    new CloneModifiers(
-                        (parseFloat(mod.crit) || 0) / 100,
-                        (parseFloat(mod.critdmg) || 0) / 100,
-                        (parseFloat(mod.dual) || 0) / 100
-                    )
+                new CloneModifiers(
+                (parseFloat(mod.crit) || 0) / 100,
+                (parseFloat(mod.critdmg) || 0) / 100,
+                (parseFloat(mod.dual) || 0) / 100
+                )
                 );
-
+                
                 // Gather mob fields
                 const mob_name = form.mob_name.value;
                 const mob_level = parseInt(form.mob_level.value) || 1;
                 // MobName enum is uppercase keys
                 let mob_enum_key = Object.keys(MobName).find(key => MobName[key] === mob_name);
                 const mob = new Mob(MobName[mob_enum_key], mob_level);
-
+                
                 // Number of fights
                 let n_fights = parseInt(form.n_fights.value) || 1000;
                 if (n_fights < 1) n_fights = 1;
@@ -604,34 +618,34 @@
                     n_fights = 1000000;
                     form.n_fights.value = 1000000;
                 }
-
+                
                 // Create player
                 const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
                 const player = new Player({
                     power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2, battle_boost
                 });
-
+                
                 // Create and run battle
                 const battle = new Battle({ player, mob, list_modifiers, verbose: false });
                 const win_chance = battle.repeat_fights(n_fights);
-
+                
                 // Get income boost and reputation values
                 const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
                 const reputation = (parseFloat(form.reputation?.value || 0) / 100);
-
+                
                 // Print result
                 const creditsPerHour = battle.get_revenue('hourly', win_chance, income_boost, reputation);
                 const creditsPerDay = battle.get_revenue('daily', win_chance, income_boost, reputation);
                 const expPerHour = battle.get_experience('hourly', win_chance, reputation);
                 const expPerDay = battle.get_experience('daily', win_chance, reputation);
                 battleResultDiv.innerHTML = `<b>Win chance:</b> ${(win_chance * 100).toFixed(2)}%<br>` +
-                    `<b>Credits per hour:</b> ${millify(creditsPerHour)}/h<br>` +
-                    `<b>Credits per day:</b> ${millify(creditsPerDay)}/day<br>` +
-                    `<b>Experience per hour:</b> ${millify(expPerHour)}/h<br>` +
-                    `<b>Experience per day:</b> ${millify(expPerDay)}/day`;
+                `<b>Credits per hour:</b> ${millify(creditsPerHour)}/h<br>` +
+                `<b>Credits per day:</b> ${millify(creditsPerDay)}/day<br>` +
+                `<b>Experience per hour:</b> ${millify(expPerHour)}/h<br>` +
+                `<b>Experience per day:</b> ${millify(expPerDay)}/day`;
             });
-
+            
             // Optimizer logic
             const optimizerBtn = document.getElementById('optimizerBtn');
             const longOptimizerBtn = document.getElementById('longOptimizerBtn');
@@ -643,7 +657,7 @@
                 const progressText = document.getElementById('optimizerProgressText');
                 progressBar.style.width = '0%';
                 progressText.textContent = '0%';
-
+                
                 // Gather player fields
                 const power = parseInt(form.power.value) || 0;
                 const precision = parseInt(form.precision.value) || 0;
@@ -657,29 +671,29 @@
                 const shield_ele1 = form.shield_ele1.value || null;
                 const shield_ele2 = form.shield_ele2.value || null;
                 const vip_status = form.vip_status.checked;
-
+                
                 // Gather clone modifiers
                 const list_modifiers = cloneModifiers.map(mod =>
-                    new CloneModifiers(
-                        (parseFloat(mod.crit) || 0) / 100,
-                        (parseFloat(mod.critdmg) || 0) / 100,
-                        (parseFloat(mod.dual) || 0) / 100
-                    )
+                new CloneModifiers(
+                (parseFloat(mod.crit) || 0) / 100,
+                (parseFloat(mod.critdmg) || 0) / 100,
+                (parseFloat(mod.dual) || 0) / 100
+                )
                 );
-
+                
                 // Gather mob fields
                 const mob_name = form.mob_name.value;
                 const mob_level = parseInt(form.mob_level.value) || 1;
                 let mob_enum_key = Object.keys(MobName).find(key => MobName[key] === mob_name);
                 const mob = new Mob(MobName[mob_enum_key], mob_level);
-
+                
                 // Create player
                 const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
                 const player = new Player({
                     power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2, battle_boost
                 });
-
+                
                 const optimizerFightsInput = document.getElementById('optimizer_n_fights');
                 const n_fights = parseInt(optimizerFightsInput.value);
                 const reputation = (parseFloat(form.reputation?.value || 0) / 100);
@@ -687,51 +701,75 @@
                 let result;
                 
                 if (isLongOptimize) {
+                    const pool = new WorkerPool(navigator.hardwareConcurrency || 8);
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
                     const range_htk = Array.from({length: 14}, (_, i) => i + 3); // [3, 4, ..., 13]
                     const range_htd = Array.from({length: 12}, (_, i) => i + 2); // [2, 3, ..., 9]
-                    const totalIterations = range_htk.length * range_htd.length;
-                    let currentIteration = 0;
-
-                    let best_build = [0, 0, 0, 0];
-                    let best_res = 0;
-                    let best_htk = 0;
-                    let best_htd = 0;
-                    let best_win_chance = 0;
-
+                    const totalTasks = range_htk.length * range_htd.length;
+                    let completedTasks = 0;
+                    
+                    const optimizer = new Optimizer(player, mob, list_modifiers, n_fights, reputation);
+                    const optimizerData = optimizer.serialize();
+                    
+                    const tasks = [];
                     for (const htk of range_htk) {
                         for (const htd of range_htd) {
-                            const [build, res, win_chance] = optimizer.findBestBuild(htd, htk, target);
-                            if (res > best_res) {
-                                best_res = res;
-                                best_build = build;
-                                best_htk = htk;
-                                best_htd = htd;
-                                best_win_chance = win_chance;
-                            }
-
-                            // Update progress
-                            currentIteration++;
-                            const progress = (currentIteration / totalIterations) * 100;
-                            progressBar.style.width = `${progress}%`;
-                            progressText.textContent = `${Math.round(progress)}%`;
-                            
-                            // Allow UI to update
-                            await new Promise(resolve => setTimeout(resolve, 0));
+                            tasks.push({
+                                optimizerData,
+                                target,
+                                htd,
+                                htk
+                            });
                         }
                     }
-
-                    result = { bestStats: best_build, winChance: best_win_chance };
                     
-                    // Update HTK and HTD fields with the optimal values
-                    document.getElementById('optimizer_htk').value = best_htk;
-                    document.getElementById('optimizer_htd').value = best_htd;
+                    //Update progress with finished tasks count.
+                    const updateProgress = () => {
+                        completedTasks++;
+                        const progress = (completedTasks / totalTasks) * 100;
+                        progressBar.style.width = `${progress}%`;
+                        progressText.textContent = `${Math.round(progress)}%`;
+                    };
                     
-                    // Save the new values to localStorage
-                    const settings = JSON.parse(localStorage.getItem('stellarOdysseySettings') || '{}');
-                    settings.optimizer_htk = best_htk;
-                    settings.optimizer_htd = best_htd;
-                    localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
+                    try {
+                        const results = await Promise.all(tasks.map(task => {
+                            return pool.runTask(task)
+                            .then(result => {
+                                updateProgress();
+                                return result;
+                            });
+                        }));
+                        
+                        let bestResult = results[0];
+                        for (const resultone of results) {
+                            if (resultone.res > bestResult.res) {
+                                bestResult = resultone;
+                            }
+                        }
+                        
+                        //bestResult construct from optimizer.js
+                        let {
+                            build: best_build,
+                            res: best_res,
+                            win_chance: best_win_chance,
+                            htd: best_htd,
+                            htk: best_htk
+                        } = bestResult;
+                        
+                        result = { bestStats: best_build, winChance: best_win_chance };
+                        
+                        document.getElementById('optimizer_htk').value = best_htk;
+                        document.getElementById('optimizer_htd').value = best_htd;
+                        
+                        const settings = JSON.parse(localStorage.getItem('stellarOdysseySettings') || '{}');
+                        settings.optimizer_htk = best_htk;
+                        settings.optimizer_htd = best_htd;
+                        localStorage.setItem('stellarOdysseySettings', JSON.stringify(settings));
+                    } catch (error) {
+                        console.error('Optimization error:', error);
+                    } finally {
+                        pool.terminate();
+                    }
                 } else {
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
                     const htk = parseInt(document.getElementById('optimizer_htk').value);
@@ -754,11 +792,11 @@
                     };
                     
                     requestAnimationFrame(animateProgress);
-
+                    
                     const [bestBuild, bestRes, bestWinChance] = optimizer.findBestBuild(htd, htk, target, false);
                     result = { bestStats: bestBuild, winChance: bestWinChance };
                 }
-
+                
                 // Update the results display
                 if (result && result.bestStats && result.winChance !== undefined) {
                     const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
@@ -784,7 +822,7 @@
                     // Get income boost and reputation values
                     const income_boost = (parseInt(form.income_boost?.value || 0) * 0.02);
                     const reputation = (parseFloat(form.reputation?.value || 0) / 100);
-
+                    
                     const creditsPerHour = battle.get_revenue('hourly', result.winChance, income_boost, reputation);
                     const creditsPerDay = battle.get_revenue('daily', result.winChance, income_boost, reputation);
                     const expPerHour = battle.get_experience('hourly', result.winChance, reputation);
@@ -802,7 +840,7 @@
                     document.getElementById('opt_credits_day').textContent = `${millify(creditsPerDay)}/day`;
                     document.getElementById('opt_exp_hour').textContent = `${millify(expPerHour)}/h`;
                     document.getElementById('opt_exp_day').textContent = `${millify(expPerDay)}/day`;
-
+                    
                     // Add Import button next to Optimize
                     let importBtn = document.getElementById('importOptimizedBtn');
                     if (!importBtn) {
@@ -835,10 +873,10 @@
                     if (importBtn) importBtn.style.display = 'none';
                 }
             }
-
+            
             optimizerBtn.addEventListener('click', () => runOptimizer(false));
             longOptimizerBtn.addEventListener('click', () => runOptimizer(true));
-
+            
             // Add event listeners to save settings when values change
             form.querySelectorAll('input, select').forEach(element => {
                 element.addEventListener('change', saveSettings);
@@ -846,12 +884,12 @@
                     element.addEventListener('input', saveSettings);
                 }
             });
-
+            
             // For number inputs, also save on input event for immediate feedback
             form.querySelectorAll('input[type="number"]').forEach(element => {
                 element.addEventListener('input', saveSettings);
             });
-
+            
             // Add event listeners for all minus/plus buttons
             document.querySelectorAll('.minus-btn, .plus-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -865,7 +903,7 @@
                     }
                 });
             });
-
+            
             // Modify the clone modifiers event listeners to save settings
             function addCloneModifierListeners() {
                 cloneModifiersSection.querySelectorAll('.minus-btn, .plus-btn, .clone-input').forEach(element => {
@@ -875,7 +913,7 @@
                     }
                 });
             }
-
+            
             // Update the renderCloneModifiers function to add listeners
             const originalRenderCloneModifiers = renderCloneModifiers;
             renderCloneModifiers = function(n) {
@@ -926,7 +964,7 @@
                     throw new Error(errorMessage);
                 }
             }
-
+            
             function updateFormWithUserData(userData) {
                 const data = userData.data;
                 
@@ -937,8 +975,18 @@
                     form.evasion.value = data.stats.evasion || 0;
                     form.hull.value = data.stats.hull || 0;
                     document.getElementById('available').value = data.stats.available || 0;
+                    
+                    // Set the total stat pool
+                    totalStatPool =
+                    (parseInt(form.power.value) || 0) +
+                    (parseInt(form.precision.value) || 0) +
+                    (parseInt(form.evasion.value) || 0) +
+                    (parseInt(form.hull.value) || 0) +
+                    (parseInt(document.getElementById('available').value) || 0);
+                    
+                    updateUnallocatedStatsDisplay()
                 }
-
+                
                 // Update ship data
                 if (data.ship) {
                     if (data.ship.weapon) {
@@ -955,7 +1003,7 @@
                             form.weapon_ele2.value = '';
                         }
                     }
-
+                    
                     if (data.ship.shield) {
                         form.shield_def.value = data.ship.shield.value || 0;
                         if (data.ship.shield.bonuses && data.ship.shield.bonuses.length > 0) {
@@ -971,10 +1019,10 @@
                         }
                     }
                 }
-
+                
                 // Update VIP status
                 form.vip_status.checked = data.premium || false;
-
+                
                 // Update number of clones and clone modifiers
                 if (data.clones && data.clones.length > 0) {
                     form.n_clones.value = data.clones.length;
@@ -984,7 +1032,7 @@
                         dual: clone.dual_shot || 0
                     }));
                 }
-
+                
                 // Update current mob and level
                 if (data.actions) {
                     if (data.actions.currentNpc) {
@@ -994,28 +1042,28 @@
                         form.mob_level.value = data.actions.currentNpcLevel;
                     }
                 }
-
+                
                 // Handle spacestation battleboost
                 if (data.spacestation && data.spacestation.battling_boost) {
                     form.battle_boost.value = data.spacestation.battling_boost;
                 } else {
                     form.battle_boost.value = 0;
                 }
-
+                
                 // Handle spacestation incomeboost
                 if (data.spacestation && data.spacestation.incomeboost) {
                     form.income_boost.value = data.spacestation.incomeboost;
                 } else {
                     form.income_boost.value = 0;
                 }
-
+                
                 // Handle reputation
                 if (data.reputation !== null && data.reputation !== undefined) {
                     form.reputation.value = data.reputation;
                 } else {
                     form.reputation.value = 0;
                 }
-
+                
                 // Render clone modifiers with the new data
                 renderCloneModifiers(parseInt(form.n_clones.value) || 1);
                 
@@ -1024,18 +1072,18 @@
                 
                 saveSettings();
             }
-
+            
             importBtn.addEventListener('click', async () => {
                 const apiKey = apiKeyInput.value.trim();
                 if (!apiKey) {
                     alert('Please enter your API key');
                     return;
                 }
-
+                
                 try {
                     importBtn.disabled = true;
                     importBtn.textContent = 'Importing...';
-
+                    
                     const userData = await fetchUserData(apiKey);
                     updateFormWithUserData(userData);
                     
@@ -1048,8 +1096,39 @@
                     importBtn.textContent = 'Import';
                 }
             });
-   
+            
+            // --- Unallocated stats logic ---
+            function updateUnallocatedStatsDisplay() {
+                const power = parseInt(form.power.value) || 0;
+                const precision =  parseInt(form.precision.value) || 0;
+                const evasion =  parseInt(form.evasion.value) || 0;
+                const hull = parseInt(form.hull.value) || 0;
+                if (totalStatPool === null) {
+                    totalStatPool =
+                    (parseInt(form.power.value) || 0) +
+                    (parseInt(form.precision.value) || 0) +
+                    (parseInt(form.evasion.value) || 0) +
+                    (parseInt(form.hull.value) || 0);
+                    document.getElementById('unallocatedStatsDisplay').textContent = `Unallocated stats: 0`;
+                }
+                else {
+                    const unallocated = totalStatPool - (power + precision + evasion + hull)
+                    document.getElementById('unallocatedStatsDisplay').textContent = `Unallocated stats: ${unallocated}`;
+                }
+            }
+            
+            ['power','precision','evasion','hull'].forEach(stat => {
+                const input = document.getElementById(stat);
+                input.addEventListener('input', () => {
+                    updateUnallocatedStatsDisplay();
+                });
+            });
+            
+            // On page load, initialize lastStats and display
+            updateUnallocatedStatsDisplay();
+            // --- End unallocated stats logic ---
         });
+        
     </script>
 </head>
 <body>
@@ -1061,7 +1140,10 @@
         <form id="playerForm" class="form-section" autocomplete="off" style="display: flex; flex-direction: row; gap: 2em;">
             <div style="flex: 3;">
                 <div class="player-block" style="width: 420px; min-width: 420px; max-width: 420px;">
-                    <div class="block-label">Player</div>
+                    <div class="block-label" style="display: flex; align-items: center; justify-content: flex-start;">
+                        <span>Player</span>
+                        <span id="unallocatedStatsDisplay" class="player-unallocated-label">Unallocated stats: 0</span>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="power">Power:</label>
@@ -1354,7 +1436,7 @@
             </div>
         </form>
     </div>
-
+    
     <div id="gathering-tab" class="tab-content">
         <div class="form-section" style="display: flex; flex-direction: row; gap: 2em;">
             <div class="optimizer-block" style="margin-top: 1.0em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px; position: relative;">
@@ -1364,9 +1446,9 @@
                 </div>
                 <div class="block-label">Resources Calculator
                     <span style="color: #4fa3ff; margin-left: 5px; cursor: help;" title="Calculate resource gathering rates and time to reach specific goals based on your current setup.
-• 'Resources' and 'Rare resources' per action refer to what you are currently gathering on your current planet
-• 'Additional dodge' and 'Additional rare resource drop' depend only on Laser and Sensor modifications
-• 'Avg. maneuverability' is the average Maneuverability across all your drones">ⓘ</span>
+                    • 'Resources' and 'Rare resources' per action refer to what you are currently gathering on your current planet
+                    • 'Additional dodge' and 'Additional rare resource drop' depend only on Laser and Sensor modifications
+                    • 'Avg. maneuverability' is the average Maneuverability across all your drones">ⓘ</span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -1441,7 +1523,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="universe-map-tab" class="tab-content">
         <div style="display: flex; flex-direction: row; padding: 2em; gap: 2em; height: 720px;">
             <div style="display: flex; flex-direction: column; gap: 1em; min-width: 400px; max-width: 400px; margin-top: 37vh; transform: translateY(-50%);">
@@ -1477,7 +1559,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="probabilities-tab" class="tab-content">
         <div class="form-section" style="display: flex; flex-direction: row; gap: 2em;">
             <div class="optimizer-block" style="margin-top: 1.0em; margin-left: 5px; width: 500px; min-width: 500px; max-width: 500px; min-height: 210px; max-height: 600px;">
@@ -1557,7 +1639,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Tab bar -->
     <div class="tab-container">
         <div class="tab active" data-tab="battling-tab">Battling</div>
@@ -1565,7 +1647,7 @@
         <div class="tab" data-tab="universe-map-tab">Universe Map</div>
         <div class="tab" data-tab="probabilities-tab">Probabilities</div>
     </div>
-
+    
     <div id="playerResult"></div>
     <footer>
         <span>Proudly made by anfneub</span>
@@ -1573,7 +1655,7 @@
         <span style="margin-left: 2.5em;">Space Odyssey Version 1.2.0 - Squadrons 2.0 - 2025-06-15</span>
         <span style="margin-left: 2.5em; cursor: pointer; color: #4fa3ff; text-decoration: underline;" id="changelogLink">Changelog</span>
     </footer>
-
+    
     <!-- Add tab switching script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1593,12 +1675,12 @@
                 // Save active tab to localStorage
                 localStorage.setItem('activeTab', tabId);
             }
-
+            
             // Add click handlers to all tabs
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => switchTab(tab));
             });
-
+            
             // Restore active tab from localStorage
             const savedTab = localStorage.getItem('activeTab');
             if (savedTab) {
@@ -1622,248 +1704,249 @@
     </script>
     <!-- Changelog Modal -->
     <div id="changelogModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
-      <div style="background:#222; color:#fff; padding:1.5em; border-radius:10px; max-width:650px; width:117vw; max-width:65vw; max-height:70vh; overflow:auto; box-shadow:0 4px 32px #000; position:relative;">
-        <button id="closeChangelog" style="position:absolute; top:0.5em; right:0.5em; background:none; border:none; color:#fff; font-size:1.5em; cursor:pointer;">&times;</button>
-        <h2 style="margin-top:0;">Changelog</h2>
-        <div id="changelogContent" style="white-space:pre-wrap; background:#181818; padding:1em; border-radius:6px; max-height:50vh; overflow:auto; font-size:1em; font-family:inherit;">Loading...</div>
-      </div>
+        <div style="background:#222; color:#fff; padding:1.5em; border-radius:10px; max-width:650px; width:117vw; max-width:65vw; max-height:70vh; overflow:auto; box-shadow:0 4px 32px #000; position:relative;">
+            <button id="closeChangelog" style="position:absolute; top:0.5em; right:0.5em; background:none; border:none; color:#fff; font-size:1.5em; cursor:pointer;">&times;</button>
+            <h2 style="margin-top:0;">Changelog</h2>
+            <div id="changelogContent" style="white-space:pre-wrap; background:#181818; padding:1em; border-radius:6px; max-height:50vh; overflow:auto; font-size:1em; font-family:inherit;">Loading...</div>
+        </div>
     </div>
     <script>
-    document.getElementById('changelogLink').addEventListener('click', function() {
-      const modal = document.getElementById('changelogModal');
-      modal.style.display = 'flex';
-      fetch('changelog.txt')
-        .then(r => r.text())
-        .then(txt => {
-          // Format lines starting with '-' as list items
-          const lines = txt.split('\n');
-          let html = '';
-          let inList = false;
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (/^\s*- /.test(line)) {
-              if (!inList) { html += '<ul style="margin:0 0 0 1.5em; padding-left:1.2em;">'; inList = true; }
-              html += '<li style="margin-bottom:0.2em;">' + line.replace(/^\s*- /, '') + '</li>';
-            } else {
-              if (inList) { html += '</ul>'; inList = false; }
-              // If the line is not empty, wrap in <div>, else add a blank line
-              html += line.trim() ? '<div>' + line + '</div>' : '<div style="height:0.7em;"></div>';
-            }
-          }
-          if (inList) html += '</ul>';
-          document.getElementById('changelogContent').innerHTML = html;
-        })
-        .catch(() => {
-          document.getElementById('changelogContent').textContent = 'Could not load changelog.';
-        });
-    });
-    document.getElementById('closeChangelog').addEventListener('click', function() {
-      document.getElementById('changelogModal').style.display = 'none';
-    });
-    // Optional: close modal on outside click
-    document.getElementById('changelogModal').addEventListener('click', function(e) {
-      if (e.target === this) this.style.display = 'none';
-    });
-    </script>
-    <script src="script.js"></script>
-    <script src="universe_map.js"></script>
-    <script type="module">
-        // Import probability functions
-        import { probability_of_observation_with_per_gatherable_qualities } from './probabilities.js';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Declare variables at the top
-            const nNodesType = document.getElementById('n_nodes_type');
-            const nNodes = document.getElementById('n_nodes');
-            const nGatherableType = document.getElementById('n_gatherable_type');
-            const nGatherable = document.getElementById('n_gatherable');
-            const nCategoriesType = document.getElementById('n_categories_type');
-            const nCategories = document.getElementById('n_categories');
-            const qualitySelections = document.getElementById('quality-selections');
-
-            // Quality ranges based on the probabilities.js file
-            const qualityRanges = [
-                { label: "1-30", value: "1-30" },
-                { label: "31-70", value: "31-70" },
-                { label: "71-90", value: "71-90" },
-                { label: "91-100", value: "91-100" }
-            ];
-
-            function updateQualitySelections() {
-                const numGatherable = parseInt(nGatherable.value) || 0;
-                const isAny = nGatherableType.value === 'any';
-                
-                // Keep the first selection row
-                const firstSelection = qualitySelections.firstElementChild;
-                qualitySelections.innerHTML = '';
-                if (firstSelection) {
-                    qualitySelections.appendChild(firstSelection);
-                }
-                
-                if (isAny || numGatherable === 0) {
-                    qualitySelections.style.display = 'none';
-                    return;
-                }
-
-                qualitySelections.style.display = 'flex';
-
-                // Add additional selections starting from index 1
-                for (let i = 1; i < numGatherable; i++) {
-                    const selectionDiv = document.createElement('div');
-                    selectionDiv.className = 'form-row';
-                    selectionDiv.style.marginBottom = '0';
-                    selectionDiv.style.display = 'flex';
-                    selectionDiv.style.alignItems = 'center';
-                    selectionDiv.style.gap = '0.5em';
-                    
-                    const label = document.createElement('label');
-                    label.textContent = `Gathering node ${i + 1} quality:`;
-                    label.style.color = '#e6eaf3';
-                    label.style.minWidth = '180px';
-                    
-                    const select = document.createElement('select');
-                    select.style.width = '8em';
-                    select.style.background = '#36405a';
-                    select.style.color = '#e6eaf3';
-                    select.style.border = '1px solid #2c3242';
-                    select.style.padding = '0.2em';
-                    select.style.borderRadius = '4px';
-                    
-                    // Add "Any" option
-                    const anyOption = document.createElement('option');
-                    anyOption.value = 'any';
-                    anyOption.textContent = 'Any';
-                    select.appendChild(anyOption);
-                    
-                    // Add quality range options
-                    qualityRanges.forEach(range => {
-                        const option = document.createElement('option');
-                        option.value = range.value;
-                        option.textContent = range.label;
-                        select.appendChild(option);
-                    });
-                    
-                    selectionDiv.appendChild(label);
-                    selectionDiv.appendChild(select);
-                    qualitySelections.appendChild(selectionDiv);
-                }
-            }
-
-            function handleTypeChange(selectElement, inputElement) {
-                const isAny = selectElement.value === 'any';
-                inputElement.disabled = isAny;
-                inputElement.readOnly = isAny;
-                inputElement.style.background = isAny ? '#2c3242' : '#36405a';
-                inputElement.style.cursor = isAny ? 'not-allowed' : 'text';
-                inputElement.style.opacity = isAny ? '0.7' : '1';
-                inputElement.style.pointerEvents = isAny ? 'none' : 'auto';
-                
-                // Update quality selections when gatherable type changes
-                if (selectElement === nGatherableType) {
-                    updateQualitySelections();
-                }
-            }
-
-            // Add event listeners for type changes
-            ['n_nodes_type', 'n_gatherable_type', 'n_categories_type'].forEach(id => {
-                const select = document.getElementById(id);
-                if (select) {
-                    select.addEventListener('change', function() {
-                        handleTypeChange(this, document.getElementById(id.replace('_type', '')));
-                    });
-                    // Set initial state
-                    handleTypeChange(select, document.getElementById(id.replace('_type', '')));
-                }
-            });
-
-            // Prevent input when disabled
-            ['n_nodes', 'n_gatherable', 'n_categories'].forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    input.addEventListener('keydown', function(e) {
-                        if (this.disabled) {
-                            e.preventDefault();
-                            return false;
+        document.getElementById('changelogLink').addEventListener('click', function() {
+            const modal = document.getElementById('changelogModal');
+            modal.style.display = 'flex';
+            fetch('changelog.txt')
+            .then(r => r.text())
+            .then(txt => {
+                // Format lines starting with '-' as list items
+                const lines = txt.split('\n');
+                let html = '';
+                let inList = false;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (/^\s*- /.test(line)) {
+                        if (!inList) { html += '<ul style="margin:0 0 0 1.5em; padding-left:1.2em;">'; inList = true; }
+                            html += '<li style="margin-bottom:0.2em;">' + line.replace(/^\s*- /, '') + '</li>';
+                        } else {
+                            if (inList) { html += '</ul>'; inList = false; }
+                            // If the line is not empty, wrap in <div>, else add a blank line
+                                html += line.trim() ? '<div>' + line + '</div>' : '<div style="height:0.7em;"></div>';
+                            }
                         }
+                        if (inList) html += '</ul>';
+                        document.getElementById('changelogContent').innerHTML = html;
+                    })
+                    .catch(() => {
+                        document.getElementById('changelogContent').textContent = 'Could not load changelog.';
                     });
-                    input.addEventListener('input', function(e) {
-                        if (this.disabled) {
-                            e.preventDefault();
-                            this.value = '';
-                            return false;
-                        }
-                    });
-                }
-            });
-
-            // Add input event listener for n_gatherable to update quality selections
-            nGatherable.addEventListener('input', updateQualitySelections);
-
-            // Set initial states
-            handleTypeChange(nNodesType, nNodes);
-            handleTypeChange(nGatherableType, nGatherable);
-            handleTypeChange(nCategoriesType, nCategories);
-            
-            // Ensure quality selections are initialized
-            updateQualitySelections();
-
-            // Calculate probability
-            document.getElementById('calculateProbabilityBtn').addEventListener('click', function() {
-                const nNodes = document.getElementById('n_nodes_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_nodes').value);
-                const nNodesType = document.getElementById('n_nodes_type').value;
-                const nGatherable = document.getElementById('n_gatherable_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_gatherable').value);
-                const nGatherableType = document.getElementById('n_gatherable_type').value;
-                const nCategories = document.getElementById('n_categories_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_categories').value);
-                const nCategoriesType = document.getElementById('n_categories_type').value;
-
-                // Collect quality ranges from all quality selection dropdowns
-                const qualityRanges = [];
-                document.querySelectorAll('#quality-selections select').forEach(select => {
-                    if (select.value === 'any') {
-                        qualityRanges.push('Any');
-                    } else {
-                        const [start, end] = select.value.split('-').map(Number);
-                        qualityRanges.push([start, end]);
-                    }
                 });
-
-                // Calculate probability
-                const inhabitedSystemValue = document.getElementById('inhabited_system').value;
-                const inhabitedSystem = inhabitedSystemValue === 'any' ? null : inhabitedSystemValue === 'inhabited';
+                document.getElementById('closeChangelog').addEventListener('click', function() {
+                    document.getElementById('changelogModal').style.display = 'none';
+                });
+                // Optional: close modal on outside click
+                document.getElementById('changelogModal').addEventListener('click', function(e) {
+                    if (e.target === this) this.style.display = 'none';
+                });
+            </script>
+            <script src="script.js"></script>
+            <script src="universe_map.js"></script>
+            <script type="module">
+                // Import probability functions
+                import { probability_of_observation_with_per_gatherable_qualities } from './probabilities.js';
                 
-                const probability = probability_of_observation_with_per_gatherable_qualities(
-                    nNodes,
-                    nNodesType,
-                    nGatherable,
-                    nGatherableType,
-                    nCategories,
-                    nCategoriesType,
-                    qualityRanges,
-                    inhabitedSystem
-                );
-
-                // Format probability with more decimal places for small values
-                const formatProbability = (prob) => {
-                    if (prob < 0.001) {
-                        return `${(prob * 100).toFixed(6)}%`;
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Declare variables at the top
+                    const nNodesType = document.getElementById('n_nodes_type');
+                    const nNodes = document.getElementById('n_nodes');
+                    const nGatherableType = document.getElementById('n_gatherable_type');
+                    const nGatherable = document.getElementById('n_gatherable');
+                    const nCategoriesType = document.getElementById('n_categories_type');
+                    const nCategories = document.getElementById('n_categories');
+                    const qualitySelections = document.getElementById('quality-selections');
+                    
+                    // Quality ranges based on the probabilities.js file
+                    const qualityRanges = [
+                    { label: "1-30", value: "1-30" },
+                    { label: "31-70", value: "31-70" },
+                    { label: "71-90", value: "71-90" },
+                    { label: "91-100", value: "91-100" }
+                    ];
+                    
+                    function updateQualitySelections() {
+                        const numGatherable = parseInt(nGatherable.value) || 0;
+                        const isAny = nGatherableType.value === 'any';
+                        
+                        // Keep the first selection row
+                        const firstSelection = qualitySelections.firstElementChild;
+                        qualitySelections.innerHTML = '';
+                        if (firstSelection) {
+                            qualitySelections.appendChild(firstSelection);
+                        }
+                        
+                        if (isAny || numGatherable === 0) {
+                            qualitySelections.style.display = 'none';
+                            return;
+                        }
+                        
+                        qualitySelections.style.display = 'flex';
+                        
+                        // Add additional selections starting from index 1
+                        for (let i = 1; i < numGatherable; i++) {
+                            const selectionDiv = document.createElement('div');
+                            selectionDiv.className = 'form-row';
+                            selectionDiv.style.marginBottom = '0';
+                            selectionDiv.style.display = 'flex';
+                            selectionDiv.style.alignItems = 'center';
+                            selectionDiv.style.gap = '0.5em';
+                            
+                            const label = document.createElement('label');
+                            label.textContent = `Gathering node ${i + 1} quality:`;
+                            label.style.color = '#e6eaf3';
+                            label.style.minWidth = '180px';
+                            
+                            const select = document.createElement('select');
+                            select.style.width = '8em';
+                            select.style.background = '#36405a';
+                            select.style.color = '#e6eaf3';
+                            select.style.border = '1px solid #2c3242';
+                            select.style.padding = '0.2em';
+                            select.style.borderRadius = '4px';
+                            
+                            // Add "Any" option
+                            const anyOption = document.createElement('option');
+                            anyOption.value = 'any';
+                            anyOption.textContent = 'Any';
+                            select.appendChild(anyOption);
+                            
+                            // Add quality range options
+                            qualityRanges.forEach(range => {
+                                const option = document.createElement('option');
+                                option.value = range.value;
+                                option.textContent = range.label;
+                                select.appendChild(option);
+                            });
+                            
+                            selectionDiv.appendChild(label);
+                            selectionDiv.appendChild(select);
+                            qualitySelections.appendChild(selectionDiv);
+                        }
                     }
-                    return `${(prob * 100).toFixed(2)}%`;
-                };
-
-                // Calculate and format estimated number of systems
-                const estimatedSystems = probability * 4000000;
-                const formatEstimatedSystems = (num) => {
-                    if (num < 0.1) {
-                        return num.toFixed(6);
+                    
+                    function handleTypeChange(selectElement, inputElement) {
+                        const isAny = selectElement.value === 'any';
+                        inputElement.disabled = isAny;
+                        inputElement.readOnly = isAny;
+                        inputElement.style.background = isAny ? '#2c3242' : '#36405a';
+                        inputElement.style.cursor = isAny ? 'not-allowed' : 'text';
+                        inputElement.style.opacity = isAny ? '0.7' : '1';
+                        inputElement.style.pointerEvents = isAny ? 'none' : 'auto';
+                        
+                        // Update quality selections when gatherable type changes
+                        if (selectElement === nGatherableType) {
+                            updateQualitySelections();
+                        }
                     }
-                    return num.toFixed(2);
-                };
-
-                // Display results
-                document.getElementById('probability_value').textContent = formatProbability(probability);
-                document.getElementById('estimated_systems').textContent = formatEstimatedSystems(estimatedSystems);
-            });
-        });
-    </script>
-</body>
-</html> 
+                    
+                    // Add event listeners for type changes
+                    ['n_nodes_type', 'n_gatherable_type', 'n_categories_type'].forEach(id => {
+                        const select = document.getElementById(id);
+                        if (select) {
+                            select.addEventListener('change', function() {
+                                handleTypeChange(this, document.getElementById(id.replace('_type', '')));
+                            });
+                            // Set initial state
+                            handleTypeChange(select, document.getElementById(id.replace('_type', '')));
+                        }
+                    });
+                    
+                    // Prevent input when disabled
+                    ['n_nodes', 'n_gatherable', 'n_categories'].forEach(id => {
+                        const input = document.getElementById(id);
+                        if (input) {
+                            input.addEventListener('keydown', function(e) {
+                                if (this.disabled) {
+                                    e.preventDefault();
+                                    return false;
+                                }
+                            });
+                            input.addEventListener('input', function(e) {
+                                if (this.disabled) {
+                                    e.preventDefault();
+                                    this.value = '';
+                                    return false;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Add input event listener for n_gatherable to update quality selections
+                    nGatherable.addEventListener('input', updateQualitySelections);
+                    
+                    // Set initial states
+                    handleTypeChange(nNodesType, nNodes);
+                    handleTypeChange(nGatherableType, nGatherable);
+                    handleTypeChange(nCategoriesType, nCategories);
+                    
+                    // Ensure quality selections are initialized
+                    updateQualitySelections();
+                    
+                    // Calculate probability
+                    document.getElementById('calculateProbabilityBtn').addEventListener('click', function() {
+                        const nNodes = document.getElementById('n_nodes_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_nodes').value);
+                        const nNodesType = document.getElementById('n_nodes_type').value;
+                        const nGatherable = document.getElementById('n_gatherable_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_gatherable').value);
+                        const nGatherableType = document.getElementById('n_gatherable_type').value;
+                        const nCategories = document.getElementById('n_categories_type').value === 'any' ? 'Any' : parseInt(document.getElementById('n_categories').value);
+                        const nCategoriesType = document.getElementById('n_categories_type').value;
+                        
+                        // Collect quality ranges from all quality selection dropdowns
+                        const qualityRanges = [];
+                        document.querySelectorAll('#quality-selections select').forEach(select => {
+                            if (select.value === 'any') {
+                                qualityRanges.push('Any');
+                            } else {
+                                const [start, end] = select.value.split('-').map(Number);
+                                qualityRanges.push([start, end]);
+                            }
+                        });
+                        
+                        // Calculate probability
+                        const inhabitedSystemValue = document.getElementById('inhabited_system').value;
+                        const inhabitedSystem = inhabitedSystemValue === 'any' ? null : inhabitedSystemValue === 'inhabited';
+                        
+                        const probability = probability_of_observation_with_per_gatherable_qualities(
+                        nNodes,
+                        nNodesType,
+                        nGatherable,
+                        nGatherableType,
+                        nCategories,
+                        nCategoriesType,
+                        qualityRanges,
+                        inhabitedSystem
+                        );
+                        
+                        // Format probability with more decimal places for small values
+                        const formatProbability = (prob) => {
+                            if (prob < 0.001) {
+                                return `${(prob * 100).toFixed(6)}%`;
+                            }
+                            return `${(prob * 100).toFixed(2)}%`;
+                        };
+                        
+                        // Calculate and format estimated number of systems
+                        const estimatedSystems = probability * 4000000;
+                        const formatEstimatedSystems = (num) => {
+                            if (num < 0.1) {
+                                return num.toFixed(6);
+                            }
+                            return num.toFixed(2);
+                        };
+                        
+                        // Display results
+                        document.getElementById('probability_value').textContent = formatProbability(probability);
+                        document.getElementById('estimated_systems').textContent = formatEstimatedSystems(estimatedSystems);
+                    });
+                });
+            </script>
+        </body>
+        </html> 
+        
