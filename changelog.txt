@@ -1,3 +1,6 @@
+2025-06-27 14:27
+- Added manual positioning of space stations and their region of influence
+
 2025-06-19 23:26
 - Increased precision of optimizer
 
