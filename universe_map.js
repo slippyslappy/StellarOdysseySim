@@ -992,8 +992,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ssLoadBtn.style.cursor = 'pointer';
 
-    renderSSList();
-
     // Always update map.spaceStations and draw if showSpaceStations is checked, after UniverseMap is initialized
     setTimeout(() => {
         const map = UniverseMap.getInstance();
