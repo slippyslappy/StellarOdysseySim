@@ -955,6 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    renderSSList();
+
     ssLoadBtn.onclick = function() {
         // Animate the button (subtle opacity flash)
         ssLoadBtn.style.transition = 'opacity 0.18s';
@@ -984,7 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
             map.spaceStations = validSS;
             map.draw();
         }
-        // Also update ssList and save only valid rows
+        // Always update ssList with the latest values from the form
         ssList = validSS.length ? validSS : [{ x: 0, y: 0 }];
         saveSS(ssList);
         renderSSList();
