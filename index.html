@@ -652,6 +652,34 @@
             const optimizerResultDiv = document.getElementById('optimizerResult');
             
             async function runOptimizer(isLongOptimize = false) {
+
+                // Loads Optimized worker amount from localStorage.
+                function getRecommendedWorkerCount() {
+                    const defaultCores = navigator.hardwareConcurrency || 4;
+                    const defaultSafe = Math.max(1, Math.floor(defaultCores / 2));
+                    const saved = localStorage.getItem("optimizer_maxWorkers");
+                    return saved ? parseInt(saved, 10) : defaultSafe;
+                }
+
+                let blockedFrames = 0;
+                let blockThreshold = 200;
+
+                // CPU cost and blocking monitor.
+                function monitorBlocking() {
+                    let lastTime = performance.now();
+                    const check = () => {
+                        const now = performance.now();
+                        const delay = now - lastTime;
+                        if (delay > blockThreshold) {
+                            blockedFrames++;
+                        }
+                        lastTime = now;
+                        requestAnimationFrame(check);
+                    };
+                    requestAnimationFrame(check);
+                }
+                monitorBlocking();
+
                 // Reset progress bar
                 const progressBar = document.getElementById('optimizerProgressBar');
                 const progressText = document.getElementById('optimizerProgressText');
@@ -701,7 +729,8 @@
                 let result;
                 
                 if (isLongOptimize) {
-                    const pool = new WorkerPool(navigator.hardwareConcurrency || 8);
+                    const usedThreads = getRecommendedWorkerCount();
+                    const pool = new WorkerPool(usedThreads);
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
                     // Utility function to create a range [start, end] 
                     function range(start, end) {
@@ -773,6 +802,22 @@
                         console.error('Optimization error:', error);
                     } finally {
                         pool.terminate();
+                        function evaluateAndSaveThreadSetting(usedThreads) {
+                            console.log(`Blocked frames: ${blockedFrames}`);
+                            const bad = blockedFrames > 5;
+                            const good = blockedFrames < 2;
+
+                            if (bad && usedThreads > 1) {
+                                const next = usedThreads - 1;
+                                console.warn(`⚠ Blocking Detected: Try using ${next} threads next time.`);
+                                localStorage.setItem('optimizer_maxWorkers', next);
+                            } else if (good && usedThreads < (navigator.hardwareConcurrency || 4)) {
+                                const next = usedThreads + 1;
+                                console.info(`✅ Flowing: Try using ${next} threads next time.`);
+                                localStorage.setItem('optimizer_maxWorkers', next);
+                            }
+                        }
+                        evaluateAndSaveThreadSetting(usedThreads);
                     }
                 } else {
                     const target = document.querySelector('input[name="optimize_target"]:checked').value;
@@ -1717,8 +1762,8 @@
         if (lastUpdated) {
             const now = new Date();
             const pad = n => n.toString().padStart(2, '0');
-            const dateStr = "2025-06-27";
-            const timeStr = "14:27";
+            const dateStr = "2025-06-29";
+            const timeStr = "18:59";
             lastUpdated.textContent = `Last updated: ${dateStr} ${timeStr}`;
         }
     </script>

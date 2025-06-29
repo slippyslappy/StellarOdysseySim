@@ -1,3 +1,6 @@
+2025-06-29 18:59
+- Added Sakaki's changes to Worker Pool for more computationally efficient optimization
+
 2025-06-27 14:27
 - Added manual positioning of space stations and their region of influence
 
