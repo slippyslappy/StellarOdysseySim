@@ -435,7 +435,7 @@ class UniverseMap {
                         ctx.font = '14px Arial';
                         ctx.fillStyle = '#e6eaf3';
                         ctx.textAlign = 'center';
-                        ctx.fillText(system.name, x, y - 10);
+                        ctx.fillText(`${system.name} (${system.coordinate_x}, ${system.coordinate_y})`, x, y - 10);
                     }
                 }
             });
