@@ -620,7 +620,7 @@
                 }
                 
                 // Create player
-                const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.05);
+                const battle_boost = (parseInt(form.battle_boost?.value || 0) * 0.02);
                 const player = new Player({
                     power, precision, evasion, hull, available: parseInt(document.getElementById('available').value) || 0, weapon_dmg, shield_def, n_clones, vip_status,
                     weapon_ele1, weapon_ele2, shield_ele1, shield_ele2, battle_boost
